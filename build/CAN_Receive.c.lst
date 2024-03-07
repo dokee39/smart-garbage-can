@@ -1,0 +1,748 @@
+ARM GAS  /tmp/ccc4PQ7T.s 			page 1
+
+
+   1              		.cpu cortex-m3
+   2              		.arch armv7-m
+   3              		.fpu softvfp
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 1
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.file	"CAN_Receive.c"
+  14              		.text
+  15              	.Ltext0:
+  16              		.cfi_sections	.debug_frame
+  17              		.file 1 "application/CAN_Receive.c"
+  18              		.section	.text.HAL_CAN_RxFifo0MsgPendingCallback,"ax",%progbits
+  19              		.align	1
+  20              		.global	HAL_CAN_RxFifo0MsgPendingCallback
+  21              		.syntax unified
+  22              		.thumb
+  23              		.thumb_func
+  25              	HAL_CAN_RxFifo0MsgPendingCallback:
+  26              	.LVL0:
+  27              	.LFB70:
+   1:application/CAN_Receive.c **** /**
+   2:application/CAN_Receive.c ****   ****************************(C) COPYRIGHT 2019 DJI****************************
+   3:application/CAN_Receive.c ****   * @file       can_receive.c/h
+   4:application/CAN_Receive.c ****   * @brief      there is CAN interrupt function  to receive motor data,
+   5:application/CAN_Receive.c ****   *             and CAN send function to send motor current to control motor.
+   6:application/CAN_Receive.c ****   *             这里是CAN中断接收函数，接收电机数据,CAN发送函数发送电机电�
+   7:application/CAN_Receive.c ****   * @note
+   8:application/CAN_Receive.c ****   * @history
+   9:application/CAN_Receive.c ****   *  Version    Date            Author          Modification
+  10:application/CAN_Receive.c ****   *  V1.0.0     Dec-26-2018     RM              1. done
+  11:application/CAN_Receive.c ****   *  V1.1.0     Nov-11-2019     RM              1. support hal lib
+  12:application/CAN_Receive.c ****   *
+  13:application/CAN_Receive.c ****   @verbatim
+  14:application/CAN_Receive.c ****   ==============================================================================
+  15:application/CAN_Receive.c **** 
+  16:application/CAN_Receive.c ****   ==============================================================================
+  17:application/CAN_Receive.c ****   @endverbatim
+  18:application/CAN_Receive.c ****   ****************************(C) COPYRIGHT 2019 DJI****************************
+  19:application/CAN_Receive.c ****   */
+  20:application/CAN_Receive.c **** 
+  21:application/CAN_Receive.c **** #include "CAN_Receive.h"
+  22:application/CAN_Receive.c **** 
+  23:application/CAN_Receive.c **** extern CAN_HandleTypeDef hcan;
+  24:application/CAN_Receive.c **** 
+  25:application/CAN_Receive.c **** // 电机报文数据，数组元素对应的电机见枚举 motor_id_e
+  26:application/CAN_Receive.c **** motor_measure_t motor_measure[MOTOR_NUM];
+  27:application/CAN_Receive.c **** 
+  28:application/CAN_Receive.c **** // 电机发送数据的 buffer
+  29:application/CAN_Receive.c **** static CAN_TxHeaderTypeDef can_tx_message;
+  30:application/CAN_Receive.c **** static uint8_t can_send_data[8];
+  31:application/CAN_Receive.c **** 
+ARM GAS  /tmp/ccc4PQ7T.s 			page 2
+
+
+  32:application/CAN_Receive.c **** void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
+  33:application/CAN_Receive.c **** {
+  28              		.loc 1 33 1 view -0
+  29              		.cfi_startproc
+  30              		@ args = 0, pretend = 0, frame = 40
+  31              		@ frame_needed = 0, uses_anonymous_args = 0
+  32              		.loc 1 33 1 is_stmt 0 view .LVU1
+  33 0000 00B5     		push	{lr}
+  34              	.LCFI0:
+  35              		.cfi_def_cfa_offset 4
+  36              		.cfi_offset 14, -4
+  37 0002 8BB0     		sub	sp, sp, #44
+  38              	.LCFI1:
+  39              		.cfi_def_cfa_offset 48
+  34:application/CAN_Receive.c ****     CAN_RxHeaderTypeDef rx_header;
+  40              		.loc 1 34 5 is_stmt 1 view .LVU2
+  35:application/CAN_Receive.c ****     uint8_t rx_data[8];
+  41              		.loc 1 35 5 view .LVU3
+  36:application/CAN_Receive.c **** 
+  37:application/CAN_Receive.c ****     HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &rx_header, rx_data);
+  42              		.loc 1 37 5 view .LVU4
+  43 0004 01AB     		add	r3, sp, #4
+  44 0006 03AA     		add	r2, sp, #12
+  45 0008 0021     		movs	r1, #0
+  46 000a FFF7FEFF 		bl	HAL_CAN_GetRxMessage
+  47              	.LVL1:
+  38:application/CAN_Receive.c **** 
+  39:application/CAN_Receive.c ****     // if (rx_header.StdId == CAN_MOTOR_ALL_ID) {
+  40:application/CAN_Receive.c ****         uint8_t id = (uint8_t)(rx_header.ExtId >> 8);
+  48              		.loc 1 40 9 view .LVU5
+  49              		.loc 1 40 41 is_stmt 0 view .LVU6
+  50 000e 049B     		ldr	r3, [sp, #16]
+  51              	.LVL2:
+  41:application/CAN_Receive.c **** 
+  42:application/CAN_Receive.c ****         switch (id) {
+  52              		.loc 1 42 9 is_stmt 1 view .LVU7
+  53 0010 C3F30722 		ubfx	r2, r3, #8, #8
+  54 0014 511E     		subs	r1, r2, #1
+  55 0016 0129     		cmp	r1, #1
+  56 0018 02D9     		bls	.L10
+  57              	.LVL3:
+  58              	.L1:
+  43:application/CAN_Receive.c ****             case CAN_ASHBIN_ID:
+  44:application/CAN_Receive.c ****             case CAN_BOARD_ID: {
+  45:application/CAN_Receive.c ****                 volatile uint8_t i       = 0;
+  46:application/CAN_Receive.c ****                 volatile uint8_t len     = (uint8_t)rx_header.DLC - 1;
+  47:application/CAN_Receive.c ****                 volatile uint8_t packNum = (uint8_t)rx_header.ExtId;
+  48:application/CAN_Receive.c **** 
+  49:application/CAN_Receive.c ****                 if (packNum == 0) {
+  50:application/CAN_Receive.c ****                     motor_measure[id - 1].func_code = rx_data[0];
+  51:application/CAN_Receive.c ****                     for (i = 0; i < len; i++)
+  52:application/CAN_Receive.c ****                         motor_measure[id - 1].data[i] = rx_data[i + 1];
+  53:application/CAN_Receive.c ****                 } else {
+  54:application/CAN_Receive.c ****                     if (motor_measure[id - 1].func_code == rx_data[0]) {
+  55:application/CAN_Receive.c ****                         for (i = 0; i < len; i++)
+  56:application/CAN_Receive.c ****                             motor_measure[id - 1].data[packNum * 7 + i] = rx_data[i + 1];
+  57:application/CAN_Receive.c ****                     } else {
+ARM GAS  /tmp/ccc4PQ7T.s 			page 3
+
+
+  58:application/CAN_Receive.c ****                         motor_measure[id - 1].data[0] = 0x6B; // 当接收到非第 0 号数据包�
+  59:application/CAN_Receive.c ****                     }
+  60:application/CAN_Receive.c ****                 }
+  61:application/CAN_Receive.c ****                 break;
+  62:application/CAN_Receive.c ****             }
+  63:application/CAN_Receive.c ****             default:
+  64:application/CAN_Receive.c ****                 break;
+  65:application/CAN_Receive.c ****         }
+  66:application/CAN_Receive.c ****     // }
+  67:application/CAN_Receive.c **** }
+  59              		.loc 1 67 1 is_stmt 0 view .LVU8
+  60 001a 0BB0     		add	sp, sp, #44
+  61              	.LCFI2:
+  62              		.cfi_remember_state
+  63              		.cfi_def_cfa_offset 4
+  64              		@ sp needed
+  65 001c 5DF804FB 		ldr	pc, [sp], #4
+  66              	.LVL4:
+  67              	.L10:
+  68              	.LCFI3:
+  69              		.cfi_restore_state
+  70              	.LBB2:
+  45:application/CAN_Receive.c ****                 volatile uint8_t len     = (uint8_t)rx_header.DLC - 1;
+  71              		.loc 1 45 17 is_stmt 1 view .LVU9
+  45:application/CAN_Receive.c ****                 volatile uint8_t len     = (uint8_t)rx_header.DLC - 1;
+  72              		.loc 1 45 34 is_stmt 0 view .LVU10
+  73 0020 0021     		movs	r1, #0
+  74 0022 8DF80110 		strb	r1, [sp, #1]
+  46:application/CAN_Receive.c ****                 volatile uint8_t packNum = (uint8_t)rx_header.ExtId;
+  75              		.loc 1 46 17 is_stmt 1 view .LVU11
+  46:application/CAN_Receive.c ****                 volatile uint8_t packNum = (uint8_t)rx_header.ExtId;
+  76              		.loc 1 46 44 is_stmt 0 view .LVU12
+  77 0026 9DF81C10 		ldrb	r1, [sp, #28]	@ zero_extendqisi2
+  46:application/CAN_Receive.c ****                 volatile uint8_t packNum = (uint8_t)rx_header.ExtId;
+  78              		.loc 1 46 67 view .LVU13
+  79 002a 0139     		subs	r1, r1, #1
+  80 002c C9B2     		uxtb	r1, r1
+  46:application/CAN_Receive.c ****                 volatile uint8_t packNum = (uint8_t)rx_header.ExtId;
+  81              		.loc 1 46 34 view .LVU14
+  82 002e 8DF80210 		strb	r1, [sp, #2]
+  47:application/CAN_Receive.c **** 
+  83              		.loc 1 47 17 is_stmt 1 view .LVU15
+  47:application/CAN_Receive.c **** 
+  84              		.loc 1 47 44 is_stmt 0 view .LVU16
+  85 0032 DBB2     		uxtb	r3, r3
+  86              	.LVL5:
+  47:application/CAN_Receive.c **** 
+  87              		.loc 1 47 34 view .LVU17
+  88 0034 8DF80330 		strb	r3, [sp, #3]
+  49:application/CAN_Receive.c ****                     motor_measure[id - 1].func_code = rx_data[0];
+  89              		.loc 1 49 17 is_stmt 1 view .LVU18
+  49:application/CAN_Receive.c ****                     motor_measure[id - 1].func_code = rx_data[0];
+  90              		.loc 1 49 29 is_stmt 0 view .LVU19
+  91 0038 9DF80330 		ldrb	r3, [sp, #3]	@ zero_extendqisi2
+  49:application/CAN_Receive.c ****                     motor_measure[id - 1].func_code = rx_data[0];
+  92              		.loc 1 49 20 view .LVU20
+  93 003c 3BBB     		cbnz	r3, .L3
+ARM GAS  /tmp/ccc4PQ7T.s 			page 4
+
+
+  50:application/CAN_Receive.c ****                     for (i = 0; i < len; i++)
+  94              		.loc 1 50 21 is_stmt 1 view .LVU21
+  50:application/CAN_Receive.c ****                     for (i = 0; i < len; i++)
+  95              		.loc 1 50 38 is_stmt 0 view .LVU22
+  96 003e 013A     		subs	r2, r2, #1
+  50:application/CAN_Receive.c ****                     for (i = 0; i < len; i++)
+  97              		.loc 1 50 62 view .LVU23
+  98 0040 9DF80400 		ldrb	r0, [sp, #4]	@ zero_extendqisi2
+  50:application/CAN_Receive.c ****                     for (i = 0; i < len; i++)
+  99              		.loc 1 50 53 view .LVU24
+ 100 0044 02EB8213 		add	r3, r2, r2, lsl #6
+ 101 0048 2C49     		ldr	r1, .L12
+ 102 004a C854     		strb	r0, [r1, r3]
+  51:application/CAN_Receive.c ****                         motor_measure[id - 1].data[i] = rx_data[i + 1];
+ 103              		.loc 1 51 21 is_stmt 1 view .LVU25
+  51:application/CAN_Receive.c ****                         motor_measure[id - 1].data[i] = rx_data[i + 1];
+ 104              		.loc 1 51 28 is_stmt 0 view .LVU26
+ 105 004c 0023     		movs	r3, #0
+ 106 004e 8DF80130 		strb	r3, [sp, #1]
+  51:application/CAN_Receive.c ****                         motor_measure[id - 1].data[i] = rx_data[i + 1];
+ 107              		.loc 1 51 21 view .LVU27
+ 108 0052 13E0     		b	.L4
+ 109              	.L5:
+  52:application/CAN_Receive.c ****                 } else {
+ 110              		.loc 1 52 25 is_stmt 1 view .LVU28
+  52:application/CAN_Receive.c ****                 } else {
+ 111              		.loc 1 52 67 is_stmt 0 view .LVU29
+ 112 0054 9DF80130 		ldrb	r3, [sp, #1]	@ zero_extendqisi2
+  52:application/CAN_Receive.c ****                 } else {
+ 113              		.loc 1 52 51 view .LVU30
+ 114 0058 9DF80110 		ldrb	r1, [sp, #1]	@ zero_extendqisi2
+  52:application/CAN_Receive.c ****                 } else {
+ 115              		.loc 1 52 64 view .LVU31
+ 116 005c 2933     		adds	r3, r3, #41
+ 117 005e 6B44     		add	r3, sp, r3
+ 118 0060 13F8240C 		ldrb	r0, [r3, #-36]	@ zero_extendqisi2
+  52:application/CAN_Receive.c ****                 } else {
+ 119              		.loc 1 52 55 view .LVU32
+ 120 0064 02EB821C 		add	ip, r2, r2, lsl #6
+ 121 0068 244B     		ldr	r3, .L12
+ 122 006a 6344     		add	r3, r3, ip
+ 123 006c 0B44     		add	r3, r3, r1
+ 124 006e 5870     		strb	r0, [r3, #1]
+  51:application/CAN_Receive.c ****                         motor_measure[id - 1].data[i] = rx_data[i + 1];
+ 125              		.loc 1 51 43 is_stmt 1 discriminator 3 view .LVU33
+ 126 0070 9DF80130 		ldrb	r3, [sp, #1]	@ zero_extendqisi2
+ 127 0074 0133     		adds	r3, r3, #1
+ 128 0076 DBB2     		uxtb	r3, r3
+ 129 0078 8DF80130 		strb	r3, [sp, #1]
+ 130              	.L4:
+  51:application/CAN_Receive.c ****                         motor_measure[id - 1].data[i] = rx_data[i + 1];
+ 131              		.loc 1 51 35 discriminator 1 view .LVU34
+ 132 007c 9DF80110 		ldrb	r1, [sp, #1]	@ zero_extendqisi2
+ 133 0080 C9B2     		uxtb	r1, r1
+ 134 0082 9DF80230 		ldrb	r3, [sp, #2]	@ zero_extendqisi2
+ 135 0086 DBB2     		uxtb	r3, r3
+ 136 0088 9942     		cmp	r1, r3
+ARM GAS  /tmp/ccc4PQ7T.s 			page 5
+
+
+ 137 008a E3D3     		bcc	.L5
+ 138 008c C5E7     		b	.L1
+ 139              	.L3:
+  54:application/CAN_Receive.c ****                         for (i = 0; i < len; i++)
+ 140              		.loc 1 54 21 view .LVU35
+  54:application/CAN_Receive.c ****                         for (i = 0; i < len; i++)
+ 141              		.loc 1 54 42 is_stmt 0 view .LVU36
+ 142 008e 013A     		subs	r2, r2, #1
+  54:application/CAN_Receive.c ****                         for (i = 0; i < len; i++)
+ 143              		.loc 1 54 46 view .LVU37
+ 144 0090 02EB8213 		add	r3, r2, r2, lsl #6
+ 145 0094 1949     		ldr	r1, .L12
+ 146 0096 C95C     		ldrb	r1, [r1, r3]	@ zero_extendqisi2
+  54:application/CAN_Receive.c ****                         for (i = 0; i < len; i++)
+ 147              		.loc 1 54 67 view .LVU38
+ 148 0098 9DF80430 		ldrb	r3, [sp, #4]	@ zero_extendqisi2
+  54:application/CAN_Receive.c ****                         for (i = 0; i < len; i++)
+ 149              		.loc 1 54 24 view .LVU39
+ 150 009c 9942     		cmp	r1, r3
+ 151 009e 06D0     		beq	.L11
+  58:application/CAN_Receive.c ****                     }
+ 152              		.loc 1 58 25 is_stmt 1 view .LVU40
+  58:application/CAN_Receive.c ****                     }
+ 153              		.loc 1 58 55 is_stmt 0 view .LVU41
+ 154 00a0 02EB8212 		add	r2, r2, r2, lsl #6
+ 155 00a4 154B     		ldr	r3, .L12
+ 156 00a6 1344     		add	r3, r3, r2
+ 157 00a8 6B22     		movs	r2, #107
+ 158 00aa 5A70     		strb	r2, [r3, #1]
+ 159              	.LBE2:
+ 160              		.loc 1 67 1 view .LVU42
+ 161 00ac B5E7     		b	.L1
+ 162              	.L11:
+ 163              	.LBB3:
+  55:application/CAN_Receive.c ****                             motor_measure[id - 1].data[packNum * 7 + i] = rx_data[i + 1];
+ 164              		.loc 1 55 25 is_stmt 1 view .LVU43
+  55:application/CAN_Receive.c ****                             motor_measure[id - 1].data[packNum * 7 + i] = rx_data[i + 1];
+ 165              		.loc 1 55 32 is_stmt 0 view .LVU44
+ 166 00ae 0023     		movs	r3, #0
+ 167 00b0 8DF80130 		strb	r3, [sp, #1]
+  55:application/CAN_Receive.c ****                             motor_measure[id - 1].data[packNum * 7 + i] = rx_data[i + 1];
+ 168              		.loc 1 55 25 view .LVU45
+ 169 00b4 18E0     		b	.L7
+ 170              	.L8:
+  56:application/CAN_Receive.c ****                     } else {
+ 171              		.loc 1 56 29 is_stmt 1 view .LVU46
+  56:application/CAN_Receive.c ****                     } else {
+ 172              		.loc 1 56 85 is_stmt 0 view .LVU47
+ 173 00b6 9DF80130 		ldrb	r3, [sp, #1]	@ zero_extendqisi2
+  56:application/CAN_Receive.c ****                     } else {
+ 174              		.loc 1 56 64 view .LVU48
+ 175 00ba 9DF80310 		ldrb	r1, [sp, #3]	@ zero_extendqisi2
+ 176 00be C1EBC101 		rsb	r1, r1, r1, lsl #3
+  56:application/CAN_Receive.c ****                     } else {
+ 177              		.loc 1 56 68 view .LVU49
+ 178 00c2 9DF80100 		ldrb	r0, [sp, #1]	@ zero_extendqisi2
+ 179 00c6 0144     		add	r1, r1, r0
+ARM GAS  /tmp/ccc4PQ7T.s 			page 6
+
+
+  56:application/CAN_Receive.c ****                     } else {
+ 180              		.loc 1 56 82 view .LVU50
+ 181 00c8 2933     		adds	r3, r3, #41
+ 182 00ca 6B44     		add	r3, sp, r3
+ 183 00cc 13F8240C 		ldrb	r0, [r3, #-36]	@ zero_extendqisi2
+  56:application/CAN_Receive.c ****                     } else {
+ 184              		.loc 1 56 73 view .LVU51
+ 185 00d0 02EB821C 		add	ip, r2, r2, lsl #6
+ 186 00d4 094B     		ldr	r3, .L12
+ 187 00d6 6344     		add	r3, r3, ip
+ 188 00d8 0B44     		add	r3, r3, r1
+ 189 00da 5870     		strb	r0, [r3, #1]
+  55:application/CAN_Receive.c ****                             motor_measure[id - 1].data[packNum * 7 + i] = rx_data[i + 1];
+ 190              		.loc 1 55 47 is_stmt 1 discriminator 3 view .LVU52
+ 191 00dc 9DF80130 		ldrb	r3, [sp, #1]	@ zero_extendqisi2
+ 192 00e0 0133     		adds	r3, r3, #1
+ 193 00e2 DBB2     		uxtb	r3, r3
+ 194 00e4 8DF80130 		strb	r3, [sp, #1]
+ 195              	.L7:
+  55:application/CAN_Receive.c ****                             motor_measure[id - 1].data[packNum * 7 + i] = rx_data[i + 1];
+ 196              		.loc 1 55 39 discriminator 1 view .LVU53
+ 197 00e8 9DF80110 		ldrb	r1, [sp, #1]	@ zero_extendqisi2
+ 198 00ec C9B2     		uxtb	r1, r1
+ 199 00ee 9DF80230 		ldrb	r3, [sp, #2]	@ zero_extendqisi2
+ 200 00f2 DBB2     		uxtb	r3, r3
+ 201 00f4 9942     		cmp	r1, r3
+ 202 00f6 DED3     		bcc	.L8
+ 203 00f8 8FE7     		b	.L1
+ 204              	.L13:
+ 205 00fa 00BF     		.align	2
+ 206              	.L12:
+ 207 00fc 00000000 		.word	motor_measure
+ 208              	.LBE3:
+ 209              		.cfi_endproc
+ 210              	.LFE70:
+ 212              		.section	.text.get_motor_measure_point,"ax",%progbits
+ 213              		.align	1
+ 214              		.global	get_motor_measure_point
+ 215              		.syntax unified
+ 216              		.thumb
+ 217              		.thumb_func
+ 219              	get_motor_measure_point:
+ 220              	.LVL6:
+ 221              	.LFB71:
+  68:application/CAN_Receive.c **** 
+  69:application/CAN_Receive.c **** /**
+  70:application/CAN_Receive.c ****  * @brief          返回指定的电机报文数据指针
+  71:application/CAN_Receive.c ****  * @param[in]      id
+  72:application/CAN_Receive.c ****  * @retval         电机数据指针
+  73:application/CAN_Receive.c ****  */
+  74:application/CAN_Receive.c **** const motor_measure_t *get_motor_measure_point(motor_id_e id)
+  75:application/CAN_Receive.c **** {
+ 222              		.loc 1 75 1 view -0
+ 223              		.cfi_startproc
+ 224              		@ args = 0, pretend = 0, frame = 0
+ 225              		@ frame_needed = 0, uses_anonymous_args = 0
+ 226              		@ link register save eliminated.
+ARM GAS  /tmp/ccc4PQ7T.s 			page 7
+
+
+  76:application/CAN_Receive.c ****     return &motor_measure[id];
+ 227              		.loc 1 76 5 view .LVU55
+ 228              		.loc 1 76 12 is_stmt 0 view .LVU56
+ 229 0000 00EB8010 		add	r0, r0, r0, lsl #6
+ 230              	.LVL7:
+  77:application/CAN_Receive.c **** }
+ 231              		.loc 1 77 1 view .LVU57
+ 232 0004 014B     		ldr	r3, .L15
+ 233 0006 1844     		add	r0, r0, r3
+ 234 0008 7047     		bx	lr
+ 235              	.L16:
+ 236 000a 00BF     		.align	2
+ 237              	.L15:
+ 238 000c 00000000 		.word	motor_measure
+ 239              		.cfi_endproc
+ 240              	.LFE71:
+ 242              		.section	.text.can_SendCmd,"ax",%progbits
+ 243              		.align	1
+ 244              		.global	can_SendCmd
+ 245              		.syntax unified
+ 246              		.thumb
+ 247              		.thumb_func
+ 249              	can_SendCmd:
+ 250              	.LVL8:
+ 251              	.LFB72:
+  78:application/CAN_Receive.c **** 
+  79:application/CAN_Receive.c **** /**
+  80:application/CAN_Receive.c ****  * @brief   CAN发送多个字节
+  81:application/CAN_Receive.c ****  * @param   无
+  82:application/CAN_Receive.c ****  * @retval  无
+  83:application/CAN_Receive.c ****  */
+  84:application/CAN_Receive.c **** void can_SendCmd(volatile uint8_t *cmd, uint8_t len)
+  85:application/CAN_Receive.c **** {
+ 252              		.loc 1 85 1 is_stmt 1 view -0
+ 253              		.cfi_startproc
+ 254              		@ args = 0, pretend = 0, frame = 16
+ 255              		@ frame_needed = 0, uses_anonymous_args = 0
+ 256              		.loc 1 85 1 is_stmt 0 view .LVU59
+ 257 0000 10B5     		push	{r4, lr}
+ 258              	.LCFI4:
+ 259              		.cfi_def_cfa_offset 8
+ 260              		.cfi_offset 4, -8
+ 261              		.cfi_offset 14, -4
+ 262 0002 84B0     		sub	sp, sp, #16
+ 263              	.LCFI5:
+ 264              		.cfi_def_cfa_offset 24
+ 265 0004 0446     		mov	r4, r0
+  86:application/CAN_Receive.c ****     volatile uint8_t i = 0, j = 0, k = 0, l = 0, packNum = 0;
+ 266              		.loc 1 86 5 is_stmt 1 view .LVU60
+ 267              		.loc 1 86 22 is_stmt 0 view .LVU61
+ 268 0006 0023     		movs	r3, #0
+ 269 0008 8DF80F30 		strb	r3, [sp, #15]
+ 270              		.loc 1 86 29 view .LVU62
+ 271 000c 8DF80E30 		strb	r3, [sp, #14]
+ 272              		.loc 1 86 36 view .LVU63
+ 273 0010 8DF80D30 		strb	r3, [sp, #13]
+ 274              		.loc 1 86 43 view .LVU64
+ARM GAS  /tmp/ccc4PQ7T.s 			page 8
+
+
+ 275 0014 8DF80C30 		strb	r3, [sp, #12]
+ 276              		.loc 1 86 50 view .LVU65
+ 277 0018 8DF80B30 		strb	r3, [sp, #11]
+  87:application/CAN_Receive.c ****     uint32_t send_mail_box;
+ 278              		.loc 1 87 5 is_stmt 1 view .LVU66
+  88:application/CAN_Receive.c **** 
+  89:application/CAN_Receive.c ****     // 除去ID地址和功能码后的数据长度
+  90:application/CAN_Receive.c ****     j = len - 2;
+ 279              		.loc 1 90 5 view .LVU67
+ 280              		.loc 1 90 13 is_stmt 0 view .LVU68
+ 281 001c 8B1E     		subs	r3, r1, #2
+ 282 001e DBB2     		uxtb	r3, r3
+ 283              		.loc 1 90 7 view .LVU69
+ 284 0020 8DF80E30 		strb	r3, [sp, #14]
+  91:application/CAN_Receive.c **** 
+  92:application/CAN_Receive.c ****     // 发送数据
+  93:application/CAN_Receive.c ****     while (i < j) {
+ 285              		.loc 1 93 5 is_stmt 1 view .LVU70
+ 286              		.loc 1 93 11 is_stmt 0 view .LVU71
+ 287 0024 2DE0     		b	.L18
+ 288              	.LVL9:
+ 289              	.L21:
+  94:application/CAN_Receive.c ****         // 数据个数
+  95:application/CAN_Receive.c ****         k = j - i;
+  96:application/CAN_Receive.c **** 
+  97:application/CAN_Receive.c ****         // 填充缓存
+  98:application/CAN_Receive.c ****         can_tx_message.StdId = CAN_MOTOR_ALL_ID;
+  99:application/CAN_Receive.c ****         can_tx_message.ExtId = ((uint32_t)cmd[0] << 8) | (uint32_t)packNum;
+ 100:application/CAN_Receive.c ****         can_tx_message.IDE   = CAN_ID_EXT;
+ 101:application/CAN_Receive.c ****         can_tx_message.RTR   = CAN_RTR_DATA;
+ 102:application/CAN_Receive.c **** 
+ 103:application/CAN_Receive.c ****         can_send_data[0] = cmd[1];
+ 104:application/CAN_Receive.c ****         // 小于8字节命令
+ 105:application/CAN_Receive.c ****         if (k < 8) {
+ 106:application/CAN_Receive.c ****             for (l = 0; l < k; l++, i++) { can_send_data[l + 1] = cmd[i + 2]; }
+ 290              		.loc 1 106 44 is_stmt 1 discriminator 3 view .LVU72
+ 291              		.loc 1 106 70 is_stmt 0 discriminator 3 view .LVU73
+ 292 0026 9DF80F20 		ldrb	r2, [sp, #15]	@ zero_extendqisi2
+ 293 002a 0232     		adds	r2, r2, #2
+ 294              		.loc 1 106 60 discriminator 3 view .LVU74
+ 295 002c 9DF80C30 		ldrb	r3, [sp, #12]	@ zero_extendqisi2
+ 296 0030 0133     		adds	r3, r3, #1
+ 297              		.loc 1 106 70 discriminator 3 view .LVU75
+ 298 0032 A15C     		ldrb	r1, [r4, r2]	@ zero_extendqisi2
+ 299              		.loc 1 106 65 discriminator 3 view .LVU76
+ 300 0034 384A     		ldr	r2, .L28
+ 301 0036 D154     		strb	r1, [r2, r3]
+ 302              		.loc 1 106 35 is_stmt 1 discriminator 3 view .LVU77
+ 303              		.loc 1 106 33 is_stmt 0 discriminator 3 view .LVU78
+ 304 0038 9DF80C30 		ldrb	r3, [sp, #12]	@ zero_extendqisi2
+ 305 003c 0133     		adds	r3, r3, #1
+ 306 003e DBB2     		uxtb	r3, r3
+ 307 0040 8DF80C30 		strb	r3, [sp, #12]
+ 308              		.loc 1 106 38 discriminator 3 view .LVU79
+ 309 0044 9DF80F30 		ldrb	r3, [sp, #15]	@ zero_extendqisi2
+ 310 0048 0133     		adds	r3, r3, #1
+ 311 004a DBB2     		uxtb	r3, r3
+ARM GAS  /tmp/ccc4PQ7T.s 			page 9
+
+
+ 312 004c 8DF80F30 		strb	r3, [sp, #15]
+ 313              	.L20:
+ 314              		.loc 1 106 27 is_stmt 1 discriminator 1 view .LVU80
+ 315 0050 9DF80C20 		ldrb	r2, [sp, #12]	@ zero_extendqisi2
+ 316 0054 D2B2     		uxtb	r2, r2
+ 317 0056 9DF80D30 		ldrb	r3, [sp, #13]	@ zero_extendqisi2
+ 318 005a DBB2     		uxtb	r3, r3
+ 319 005c 9A42     		cmp	r2, r3
+ 320 005e E2D3     		bcc	.L21
+ 107:application/CAN_Receive.c ****             can_tx_message.DLC = k + 1;
+ 321              		.loc 1 107 13 view .LVU81
+ 322              		.loc 1 107 36 is_stmt 0 view .LVU82
+ 323 0060 9DF80D30 		ldrb	r3, [sp, #13]	@ zero_extendqisi2
+ 324 0064 0133     		adds	r3, r3, #1
+ 325              		.loc 1 107 32 view .LVU83
+ 326 0066 2D4A     		ldr	r2, .L28+4
+ 327 0068 1361     		str	r3, [r2, #16]
+ 328              	.L22:
+ 108:application/CAN_Receive.c ****         }
+ 109:application/CAN_Receive.c ****         // 大于8字节命令，分包发送，每包数据最多发送8个字节
+ 110:application/CAN_Receive.c ****         else {
+ 111:application/CAN_Receive.c ****             for (l = 0; l < 7; l++, i++) { can_send_data[l + 1] = cmd[i + 2]; }
+ 112:application/CAN_Receive.c ****             can_tx_message.DLC = 8;
+ 113:application/CAN_Receive.c ****         }
+ 114:application/CAN_Receive.c **** 
+ 115:application/CAN_Receive.c ****         // 发送数据
+ 116:application/CAN_Receive.c ****         HAL_CAN_AddTxMessage(&hcan, &can_tx_message, can_send_data, &send_mail_box);
+ 329              		.loc 1 116 9 is_stmt 1 view .LVU84
+ 330 006a 01AB     		add	r3, sp, #4
+ 331 006c 2A4A     		ldr	r2, .L28
+ 332 006e 2B49     		ldr	r1, .L28+4
+ 333 0070 2B48     		ldr	r0, .L28+8
+ 334 0072 FFF7FEFF 		bl	HAL_CAN_AddTxMessage
+ 335              	.LVL10:
+ 117:application/CAN_Receive.c **** 
+ 118:application/CAN_Receive.c ****         // 记录发送的第几包的数据
+ 119:application/CAN_Receive.c ****         ++packNum;
+ 336              		.loc 1 119 9 view .LVU85
+ 337 0076 9DF80B30 		ldrb	r3, [sp, #11]	@ zero_extendqisi2
+ 338 007a 0133     		adds	r3, r3, #1
+ 339 007c DBB2     		uxtb	r3, r3
+ 340 007e 8DF80B30 		strb	r3, [sp, #11]
+ 341              	.L18:
+  93:application/CAN_Receive.c ****         // 数据个数
+ 342              		.loc 1 93 14 view .LVU86
+ 343 0082 9DF80F20 		ldrb	r2, [sp, #15]	@ zero_extendqisi2
+ 344 0086 D2B2     		uxtb	r2, r2
+ 345 0088 9DF80E30 		ldrb	r3, [sp, #14]	@ zero_extendqisi2
+ 346 008c DBB2     		uxtb	r3, r3
+ 347 008e 9A42     		cmp	r2, r3
+ 348 0090 40D2     		bcs	.L27
+  95:application/CAN_Receive.c **** 
+ 349              		.loc 1 95 9 view .LVU87
+  95:application/CAN_Receive.c **** 
+ 350              		.loc 1 95 15 is_stmt 0 view .LVU88
+ 351 0092 9DF80E30 		ldrb	r3, [sp, #14]	@ zero_extendqisi2
+ 352 0096 9DF80F20 		ldrb	r2, [sp, #15]	@ zero_extendqisi2
+ARM GAS  /tmp/ccc4PQ7T.s 			page 10
+
+
+ 353 009a 9B1A     		subs	r3, r3, r2
+ 354 009c DBB2     		uxtb	r3, r3
+  95:application/CAN_Receive.c **** 
+ 355              		.loc 1 95 11 view .LVU89
+ 356 009e 8DF80D30 		strb	r3, [sp, #13]
+  98:application/CAN_Receive.c ****         can_tx_message.ExtId = ((uint32_t)cmd[0] << 8) | (uint32_t)packNum;
+ 357              		.loc 1 98 9 is_stmt 1 view .LVU90
+  98:application/CAN_Receive.c ****         can_tx_message.ExtId = ((uint32_t)cmd[0] << 8) | (uint32_t)packNum;
+ 358              		.loc 1 98 30 is_stmt 0 view .LVU91
+ 359 00a2 1E4B     		ldr	r3, .L28+4
+ 360 00a4 0021     		movs	r1, #0
+ 361 00a6 1960     		str	r1, [r3]
+  99:application/CAN_Receive.c ****         can_tx_message.IDE   = CAN_ID_EXT;
+ 362              		.loc 1 99 9 is_stmt 1 view .LVU92
+  99:application/CAN_Receive.c ****         can_tx_message.IDE   = CAN_ID_EXT;
+ 363              		.loc 1 99 46 is_stmt 0 view .LVU93
+ 364 00a8 2078     		ldrb	r0, [r4]	@ zero_extendqisi2
+  99:application/CAN_Receive.c ****         can_tx_message.IDE   = CAN_ID_EXT;
+ 365              		.loc 1 99 58 view .LVU94
+ 366 00aa 9DF80B20 		ldrb	r2, [sp, #11]	@ zero_extendqisi2
+  99:application/CAN_Receive.c ****         can_tx_message.IDE   = CAN_ID_EXT;
+ 367              		.loc 1 99 56 view .LVU95
+ 368 00ae 42EA0022 		orr	r2, r2, r0, lsl #8
+  99:application/CAN_Receive.c ****         can_tx_message.IDE   = CAN_ID_EXT;
+ 369              		.loc 1 99 30 view .LVU96
+ 370 00b2 5A60     		str	r2, [r3, #4]
+ 100:application/CAN_Receive.c ****         can_tx_message.RTR   = CAN_RTR_DATA;
+ 371              		.loc 1 100 9 is_stmt 1 view .LVU97
+ 100:application/CAN_Receive.c ****         can_tx_message.RTR   = CAN_RTR_DATA;
+ 372              		.loc 1 100 30 is_stmt 0 view .LVU98
+ 373 00b4 0422     		movs	r2, #4
+ 374 00b6 9A60     		str	r2, [r3, #8]
+ 101:application/CAN_Receive.c **** 
+ 375              		.loc 1 101 9 is_stmt 1 view .LVU99
+ 101:application/CAN_Receive.c **** 
+ 376              		.loc 1 101 30 is_stmt 0 view .LVU100
+ 377 00b8 D960     		str	r1, [r3, #12]
+ 103:application/CAN_Receive.c ****         // 小于8字节命令
+ 378              		.loc 1 103 9 is_stmt 1 view .LVU101
+ 103:application/CAN_Receive.c ****         // 小于8字节命令
+ 379              		.loc 1 103 31 is_stmt 0 view .LVU102
+ 380 00ba 6278     		ldrb	r2, [r4, #1]	@ zero_extendqisi2
+ 103:application/CAN_Receive.c ****         // 小于8字节命令
+ 381              		.loc 1 103 26 view .LVU103
+ 382 00bc 164B     		ldr	r3, .L28
+ 383 00be 1A70     		strb	r2, [r3]
+ 105:application/CAN_Receive.c ****             for (l = 0; l < k; l++, i++) { can_send_data[l + 1] = cmd[i + 2]; }
+ 384              		.loc 1 105 9 is_stmt 1 view .LVU104
+ 105:application/CAN_Receive.c ****             for (l = 0; l < k; l++, i++) { can_send_data[l + 1] = cmd[i + 2]; }
+ 385              		.loc 1 105 15 is_stmt 0 view .LVU105
+ 386 00c0 9DF80D30 		ldrb	r3, [sp, #13]	@ zero_extendqisi2
+ 387 00c4 DBB2     		uxtb	r3, r3
+ 105:application/CAN_Receive.c ****             for (l = 0; l < k; l++, i++) { can_send_data[l + 1] = cmd[i + 2]; }
+ 388              		.loc 1 105 12 view .LVU106
+ 389 00c6 072B     		cmp	r3, #7
+ 390 00c8 02D8     		bhi	.L19
+ 106:application/CAN_Receive.c ****             can_tx_message.DLC = k + 1;
+ARM GAS  /tmp/ccc4PQ7T.s 			page 11
+
+
+ 391              		.loc 1 106 13 is_stmt 1 view .LVU107
+ 106:application/CAN_Receive.c ****             can_tx_message.DLC = k + 1;
+ 392              		.loc 1 106 20 is_stmt 0 view .LVU108
+ 393 00ca 8DF80C10 		strb	r1, [sp, #12]
+ 106:application/CAN_Receive.c ****             can_tx_message.DLC = k + 1;
+ 394              		.loc 1 106 13 view .LVU109
+ 395 00ce BFE7     		b	.L20
+ 396              	.L19:
+ 111:application/CAN_Receive.c ****             can_tx_message.DLC = 8;
+ 397              		.loc 1 111 13 is_stmt 1 view .LVU110
+ 111:application/CAN_Receive.c ****             can_tx_message.DLC = 8;
+ 398              		.loc 1 111 20 is_stmt 0 view .LVU111
+ 399 00d0 0023     		movs	r3, #0
+ 400 00d2 8DF80C30 		strb	r3, [sp, #12]
+ 111:application/CAN_Receive.c ****             can_tx_message.DLC = 8;
+ 401              		.loc 1 111 13 view .LVU112
+ 402 00d6 14E0     		b	.L23
+ 403              	.L24:
+ 111:application/CAN_Receive.c ****             can_tx_message.DLC = 8;
+ 404              		.loc 1 111 44 is_stmt 1 discriminator 3 view .LVU113
+ 111:application/CAN_Receive.c ****             can_tx_message.DLC = 8;
+ 405              		.loc 1 111 70 is_stmt 0 discriminator 3 view .LVU114
+ 406 00d8 9DF80F20 		ldrb	r2, [sp, #15]	@ zero_extendqisi2
+ 407 00dc 0232     		adds	r2, r2, #2
+ 111:application/CAN_Receive.c ****             can_tx_message.DLC = 8;
+ 408              		.loc 1 111 60 discriminator 3 view .LVU115
+ 409 00de 9DF80C30 		ldrb	r3, [sp, #12]	@ zero_extendqisi2
+ 410 00e2 0133     		adds	r3, r3, #1
+ 111:application/CAN_Receive.c ****             can_tx_message.DLC = 8;
+ 411              		.loc 1 111 70 discriminator 3 view .LVU116
+ 412 00e4 A15C     		ldrb	r1, [r4, r2]	@ zero_extendqisi2
+ 111:application/CAN_Receive.c ****             can_tx_message.DLC = 8;
+ 413              		.loc 1 111 65 discriminator 3 view .LVU117
+ 414 00e6 0C4A     		ldr	r2, .L28
+ 415 00e8 D154     		strb	r1, [r2, r3]
+ 111:application/CAN_Receive.c ****             can_tx_message.DLC = 8;
+ 416              		.loc 1 111 35 is_stmt 1 discriminator 3 view .LVU118
+ 111:application/CAN_Receive.c ****             can_tx_message.DLC = 8;
+ 417              		.loc 1 111 33 is_stmt 0 discriminator 3 view .LVU119
+ 418 00ea 9DF80C30 		ldrb	r3, [sp, #12]	@ zero_extendqisi2
+ 419 00ee 0133     		adds	r3, r3, #1
+ 420 00f0 DBB2     		uxtb	r3, r3
+ 421 00f2 8DF80C30 		strb	r3, [sp, #12]
+ 111:application/CAN_Receive.c ****             can_tx_message.DLC = 8;
+ 422              		.loc 1 111 38 discriminator 3 view .LVU120
+ 423 00f6 9DF80F30 		ldrb	r3, [sp, #15]	@ zero_extendqisi2
+ 424 00fa 0133     		adds	r3, r3, #1
+ 425 00fc DBB2     		uxtb	r3, r3
+ 426 00fe 8DF80F30 		strb	r3, [sp, #15]
+ 427              	.L23:
+ 111:application/CAN_Receive.c ****             can_tx_message.DLC = 8;
+ 428              		.loc 1 111 27 is_stmt 1 discriminator 1 view .LVU121
+ 429 0102 9DF80C30 		ldrb	r3, [sp, #12]	@ zero_extendqisi2
+ 430 0106 DBB2     		uxtb	r3, r3
+ 431 0108 062B     		cmp	r3, #6
+ 432 010a E5D9     		bls	.L24
+ 112:application/CAN_Receive.c ****         }
+ARM GAS  /tmp/ccc4PQ7T.s 			page 12
+
+
+ 433              		.loc 1 112 13 view .LVU122
+ 112:application/CAN_Receive.c ****         }
+ 434              		.loc 1 112 32 is_stmt 0 view .LVU123
+ 435 010c 034B     		ldr	r3, .L28+4
+ 436 010e 0822     		movs	r2, #8
+ 437 0110 1A61     		str	r2, [r3, #16]
+ 438 0112 AAE7     		b	.L22
+ 439              	.L27:
+ 120:application/CAN_Receive.c ****     }
+ 121:application/CAN_Receive.c **** }
+ 440              		.loc 1 121 1 view .LVU124
+ 441 0114 04B0     		add	sp, sp, #16
+ 442              	.LCFI6:
+ 443              		.cfi_def_cfa_offset 8
+ 444              		@ sp needed
+ 445 0116 10BD     		pop	{r4, pc}
+ 446              	.LVL11:
+ 447              	.L29:
+ 448              		.loc 1 121 1 view .LVU125
+ 449              		.align	2
+ 450              	.L28:
+ 451 0118 00000000 		.word	can_send_data
+ 452 011c 00000000 		.word	can_tx_message
+ 453 0120 00000000 		.word	hcan
+ 454              		.cfi_endproc
+ 455              	.LFE72:
+ 457              		.section	.bss.can_send_data,"aw",%nobits
+ 458              		.align	2
+ 461              	can_send_data:
+ 462 0000 00000000 		.space	8
+ 462      00000000 
+ 463              		.section	.bss.can_tx_message,"aw",%nobits
+ 464              		.align	2
+ 467              	can_tx_message:
+ 468 0000 00000000 		.space	24
+ 468      00000000 
+ 468      00000000 
+ 468      00000000 
+ 468      00000000 
+ 469              		.global	motor_measure
+ 470              		.section	.bss.motor_measure,"aw",%nobits
+ 471              		.align	2
+ 474              	motor_measure:
+ 475 0000 00000000 		.space	130
+ 475      00000000 
+ 475      00000000 
+ 475      00000000 
+ 475      00000000 
+ 476              		.text
+ 477              	.Letext0:
+ 478              		.file 2 "/usr/arm-none-eabi/include/machine/_default_types.h"
+ 479              		.file 3 "/usr/arm-none-eabi/include/sys/_stdint.h"
+ 480              		.file 4 "Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xe.h"
+ 481              		.file 5 "Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h"
+ 482              		.file 6 "Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h"
+ 483              		.file 7 "Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_can.h"
+ 484              		.file 8 "application/CAN_Receive.h"
+ARM GAS  /tmp/ccc4PQ7T.s 			page 13
+
+
+ARM GAS  /tmp/ccc4PQ7T.s 			page 14
+
+
+DEFINED SYMBOLS
+                            *ABS*:00000000 CAN_Receive.c
+     /tmp/ccc4PQ7T.s:19     .text.HAL_CAN_RxFifo0MsgPendingCallback:00000000 $t
+     /tmp/ccc4PQ7T.s:25     .text.HAL_CAN_RxFifo0MsgPendingCallback:00000000 HAL_CAN_RxFifo0MsgPendingCallback
+     /tmp/ccc4PQ7T.s:207    .text.HAL_CAN_RxFifo0MsgPendingCallback:000000fc $d
+     /tmp/ccc4PQ7T.s:474    .bss.motor_measure:00000000 motor_measure
+     /tmp/ccc4PQ7T.s:213    .text.get_motor_measure_point:00000000 $t
+     /tmp/ccc4PQ7T.s:219    .text.get_motor_measure_point:00000000 get_motor_measure_point
+     /tmp/ccc4PQ7T.s:238    .text.get_motor_measure_point:0000000c $d
+     /tmp/ccc4PQ7T.s:243    .text.can_SendCmd:00000000 $t
+     /tmp/ccc4PQ7T.s:249    .text.can_SendCmd:00000000 can_SendCmd
+     /tmp/ccc4PQ7T.s:451    .text.can_SendCmd:00000118 $d
+     /tmp/ccc4PQ7T.s:461    .bss.can_send_data:00000000 can_send_data
+     /tmp/ccc4PQ7T.s:467    .bss.can_tx_message:00000000 can_tx_message
+     /tmp/ccc4PQ7T.s:458    .bss.can_send_data:00000000 $d
+     /tmp/ccc4PQ7T.s:464    .bss.can_tx_message:00000000 $d
+     /tmp/ccc4PQ7T.s:471    .bss.motor_measure:00000000 $d
+
+UNDEFINED SYMBOLS
+HAL_CAN_GetRxMessage
+HAL_CAN_AddTxMessage
+hcan

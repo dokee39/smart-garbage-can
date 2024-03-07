@@ -1,0 +1,312 @@
+ARM GAS  /tmp/cca3BGBY.s 			page 1
+
+
+   1              		.cpu cortex-m3
+   2              		.arch armv7-m
+   3              		.fpu softvfp
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 1
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.file	"USART_receive.c"
+  14              		.text
+  15              	.Ltext0:
+  16              		.cfi_sections	.debug_frame
+  17              		.file 1 "application/USART_receive.c"
+  18              		.section	.text.usart_ReceiveStart,"ax",%progbits
+  19              		.align	1
+  20              		.global	usart_ReceiveStart
+  21              		.syntax unified
+  22              		.thumb
+  23              		.thumb_func
+  25              	usart_ReceiveStart:
+  26              	.LFB70:
+   1:application/USART_receive.c **** /**
+   2:application/USART_receive.c ****  * @file USART_receive.c
+   3:application/USART_receive.c ****  * @author dokee (dokee.39@gmail.com)
+   4:application/USART_receive.c ****  * @brief
+   5:application/USART_receive.c ****  * @version 0.1
+   6:application/USART_receive.c ****  * @date 2024-01-28
+   7:application/USART_receive.c ****  *
+   8:application/USART_receive.c ****  * @copyright Copyright (c) 2024
+   9:application/USART_receive.c ****  *
+  10:application/USART_receive.c ****  */
+  11:application/USART_receive.c **** 
+  12:application/USART_receive.c **** #include "USART_receive.h"
+  13:application/USART_receive.c **** 
+  14:application/USART_receive.c **** #define huart_pi huart1
+  15:application/USART_receive.c **** 
+  16:application/USART_receive.c **** extern UART_HandleTypeDef huart_pi;
+  17:application/USART_receive.c **** 
+  18:application/USART_receive.c **** garbage_t pi_measure;
+  19:application/USART_receive.c **** 
+  20:application/USART_receive.c **** static uint8_t usart_rx_data[USART_RX_DATA_LEN];
+  21:application/USART_receive.c **** 
+  22:application/USART_receive.c **** void usart_ReceiveStart(void)
+  23:application/USART_receive.c **** {
+  27              		.loc 1 23 1 view -0
+  28              		.cfi_startproc
+  29              		@ args = 0, pretend = 0, frame = 0
+  30              		@ frame_needed = 0, uses_anonymous_args = 0
+  31 0000 10B5     		push	{r4, lr}
+  32              	.LCFI0:
+  33              		.cfi_def_cfa_offset 8
+  34              		.cfi_offset 4, -8
+  35              		.cfi_offset 14, -4
+ARM GAS  /tmp/cca3BGBY.s 			page 2
+
+
+  24:application/USART_receive.c ****     HAL_UARTEx_ReceiveToIdle_DMA(&huart_pi, usart_rx_data, USART_RX_DATA_LEN);
+  36              		.loc 1 24 5 view .LVU1
+  37 0002 064C     		ldr	r4, .L3
+  38 0004 0822     		movs	r2, #8
+  39 0006 0649     		ldr	r1, .L3+4
+  40 0008 2046     		mov	r0, r4
+  41 000a FFF7FEFF 		bl	HAL_UARTEx_ReceiveToIdle_DMA
+  42              	.LVL0:
+  25:application/USART_receive.c ****     __HAL_DMA_DISABLE_IT(huart_pi.hdmarx, DMA_IT_HT);
+  43              		.loc 1 25 5 view .LVU2
+  44 000e E36B     		ldr	r3, [r4, #60]
+  45 0010 1A68     		ldr	r2, [r3]
+  46 0012 1368     		ldr	r3, [r2]
+  47 0014 23F00403 		bic	r3, r3, #4
+  48 0018 1360     		str	r3, [r2]
+  26:application/USART_receive.c **** }
+  49              		.loc 1 26 1 is_stmt 0 view .LVU3
+  50 001a 10BD     		pop	{r4, pc}
+  51              	.L4:
+  52              		.align	2
+  53              	.L3:
+  54 001c 00000000 		.word	huart1
+  55 0020 00000000 		.word	usart_rx_data
+  56              		.cfi_endproc
+  57              	.LFE70:
+  59              		.section	.text.HAL_UARTEx_RxEventCallback,"ax",%progbits
+  60              		.align	1
+  61              		.global	HAL_UARTEx_RxEventCallback
+  62              		.syntax unified
+  63              		.thumb
+  64              		.thumb_func
+  66              	HAL_UARTEx_RxEventCallback:
+  67              	.LVL1:
+  68              	.LFB71:
+  27:application/USART_receive.c **** 
+  28:application/USART_receive.c **** void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
+  29:application/USART_receive.c **** {
+  69              		.loc 1 29 1 is_stmt 1 view -0
+  70              		.cfi_startproc
+  71              		@ args = 0, pretend = 0, frame = 0
+  72              		@ frame_needed = 0, uses_anonymous_args = 0
+  30:application/USART_receive.c ****     if (huart == &huart_pi) {
+  73              		.loc 1 30 5 view .LVU5
+  74              		.loc 1 30 8 is_stmt 0 view .LVU6
+  75 0000 124B     		ldr	r3, .L14
+  76 0002 8342     		cmp	r3, r0
+  77 0004 00D0     		beq	.L12
+  78 0006 7047     		bx	lr
+  79              	.L12:
+  29:application/USART_receive.c ****     if (huart == &huart_pi) {
+  80              		.loc 1 29 1 view .LVU7
+  81 0008 10B5     		push	{r4, lr}
+  82              	.LCFI1:
+  83              		.cfi_def_cfa_offset 8
+  84              		.cfi_offset 4, -8
+  85              		.cfi_offset 14, -4
+  86              	.LBB2:
+ARM GAS  /tmp/cca3BGBY.s 			page 3
+
+
+  31:application/USART_receive.c ****         char *pcmd_start;
+  87              		.loc 1 31 9 is_stmt 1 view .LVU8
+  32:application/USART_receive.c ****         usart_rx_data[USART_RX_DATA_LEN - 1] = '\0';
+  88              		.loc 1 32 9 view .LVU9
+  89              		.loc 1 32 46 is_stmt 0 view .LVU10
+  90 000a 1148     		ldr	r0, .L14+4
+  91              	.LVL2:
+  92              		.loc 1 32 46 view .LVU11
+  93 000c 0023     		movs	r3, #0
+  94 000e C371     		strb	r3, [r0, #7]
+  33:application/USART_receive.c ****         pcmd_start                           = strchr((char *)usart_rx_data, USART_CMD_START);
+  95              		.loc 1 33 9 is_stmt 1 view .LVU12
+  96              		.loc 1 33 48 is_stmt 0 view .LVU13
+  97 0010 3C21     		movs	r1, #60
+  98              	.LVL3:
+  99              		.loc 1 33 48 view .LVU14
+ 100 0012 FFF7FEFF 		bl	strchr
+ 101              	.LVL4:
+  34:application/USART_receive.c ****         if (pcmd_start != NULL) {
+ 102              		.loc 1 34 9 is_stmt 1 view .LVU15
+ 103              		.loc 1 34 12 is_stmt 0 view .LVU16
+ 104 0016 10B1     		cbz	r0, .L7
+  35:application/USART_receive.c ****             if (pcmd_start[CMD_END_OFFSET] == USART_CMD_END) {
+ 105              		.loc 1 35 13 is_stmt 1 view .LVU17
+ 106              		.loc 1 35 27 is_stmt 0 view .LVU18
+ 107 0018 0279     		ldrb	r2, [r0, #4]	@ zero_extendqisi2
+ 108              		.loc 1 35 16 view .LVU19
+ 109 001a 3E2A     		cmp	r2, #62
+ 110 001c 0CD0     		beq	.L13
+ 111              	.L7:
+  36:application/USART_receive.c ****                 pi_measure.type         = *(pcmd_start + TYPE_OFFSET);
+  37:application/USART_receive.c ****                 pi_measure.num = (((uint16_t)(*(pcmd_start + NUM_OFFSET)) << 8) | *(pcmd_start + NU
+  38:application/USART_receive.c ****             }
+  39:application/USART_receive.c ****         }
+  40:application/USART_receive.c **** 
+  41:application/USART_receive.c ****         HAL_UARTEx_ReceiveToIdle_DMA(&huart_pi, usart_rx_data, USART_RX_DATA_LEN);
+ 112              		.loc 1 41 9 is_stmt 1 view .LVU20
+ 113 001e 0B4C     		ldr	r4, .L14
+ 114 0020 0822     		movs	r2, #8
+ 115 0022 0B49     		ldr	r1, .L14+4
+ 116 0024 2046     		mov	r0, r4
+ 117              	.LVL5:
+ 118              		.loc 1 41 9 is_stmt 0 view .LVU21
+ 119 0026 FFF7FEFF 		bl	HAL_UARTEx_ReceiveToIdle_DMA
+ 120              	.LVL6:
+  42:application/USART_receive.c ****         __HAL_DMA_DISABLE_IT(huart_pi.hdmarx, DMA_IT_HT);
+ 121              		.loc 1 42 9 is_stmt 1 view .LVU22
+ 122 002a E36B     		ldr	r3, [r4, #60]
+ 123 002c 1A68     		ldr	r2, [r3]
+ 124 002e 1368     		ldr	r3, [r2]
+ 125 0030 23F00403 		bic	r3, r3, #4
+ 126 0034 1360     		str	r3, [r2]
+ 127              	.LBE2:
+  43:application/USART_receive.c ****     }
+  44:application/USART_receive.c **** }
+ 128              		.loc 1 44 1 is_stmt 0 view .LVU23
+ 129 0036 10BD     		pop	{r4, pc}
+ARM GAS  /tmp/cca3BGBY.s 			page 4
+
+
+ 130              	.LVL7:
+ 131              	.L13:
+ 132              	.LBB3:
+  36:application/USART_receive.c ****                 pi_measure.num = (((uint16_t)(*(pcmd_start + NUM_OFFSET)) << 8) | *(pcmd_start + NU
+ 133              		.loc 1 36 17 is_stmt 1 view .LVU24
+  36:application/USART_receive.c ****                 pi_measure.num = (((uint16_t)(*(pcmd_start + NUM_OFFSET)) << 8) | *(pcmd_start + NU
+ 134              		.loc 1 36 43 is_stmt 0 view .LVU25
+ 135 0038 4178     		ldrb	r1, [r0, #1]	@ zero_extendqisi2
+  36:application/USART_receive.c ****                 pi_measure.num = (((uint16_t)(*(pcmd_start + NUM_OFFSET)) << 8) | *(pcmd_start + NU
+ 136              		.loc 1 36 41 view .LVU26
+ 137 003a 064A     		ldr	r2, .L14+8
+ 138 003c 1170     		strb	r1, [r2]
+  37:application/USART_receive.c ****             }
+ 139              		.loc 1 37 17 is_stmt 1 view .LVU27
+  37:application/USART_receive.c ****             }
+ 140              		.loc 1 37 47 is_stmt 0 view .LVU28
+ 141 003e 8178     		ldrb	r1, [r0, #2]	@ zero_extendqisi2
+  37:application/USART_receive.c ****             }
+ 142              		.loc 1 37 83 view .LVU29
+ 143 0040 C378     		ldrb	r3, [r0, #3]	@ zero_extendqisi2
+  37:application/USART_receive.c ****             }
+ 144              		.loc 1 37 81 view .LVU30
+ 145 0042 43EA0123 		orr	r3, r3, r1, lsl #8
+  37:application/USART_receive.c ****             }
+ 146              		.loc 1 37 32 view .LVU31
+ 147 0046 5380     		strh	r3, [r2, #2]	@ movhi
+ 148 0048 E9E7     		b	.L7
+ 149              	.L15:
+ 150 004a 00BF     		.align	2
+ 151              	.L14:
+ 152 004c 00000000 		.word	huart1
+ 153 0050 00000000 		.word	usart_rx_data
+ 154 0054 00000000 		.word	pi_measure
+ 155              	.LBE3:
+ 156              		.cfi_endproc
+ 157              	.LFE71:
+ 159              		.section	.rodata.usart_SendState.str1.4,"aMS",%progbits,1
+ 160              		.align	2
+ 161              	.LC0:
+ 162 0000 3C25633E 		.ascii	"<%c>\015\012\000"
+ 162      0D0A00
+ 163              		.section	.text.usart_SendState,"ax",%progbits
+ 164              		.align	1
+ 165              		.global	usart_SendState
+ 166              		.syntax unified
+ 167              		.thumb
+ 168              		.thumb_func
+ 170              	usart_SendState:
+ 171              	.LVL8:
+ 172              	.LFB72:
+  45:application/USART_receive.c **** 
+  46:application/USART_receive.c **** void usart_SendState(state_e SATAE)
+  47:application/USART_receive.c **** {
+ 173              		.loc 1 47 1 is_stmt 1 view -0
+ 174              		.cfi_startproc
+ 175              		@ args = 0, pretend = 0, frame = 0
+ 176              		@ frame_needed = 0, uses_anonymous_args = 0
+ARM GAS  /tmp/cca3BGBY.s 			page 5
+
+
+ 177              		.loc 1 47 1 is_stmt 0 view .LVU33
+ 178 0000 08B5     		push	{r3, lr}
+ 179              	.LCFI2:
+ 180              		.cfi_def_cfa_offset 8
+ 181              		.cfi_offset 3, -8
+ 182              		.cfi_offset 14, -4
+ 183 0002 0146     		mov	r1, r0
+  48:application/USART_receive.c ****     usart1_printf("<%c>\r\n", (char)SATAE);
+ 184              		.loc 1 48 5 is_stmt 1 view .LVU34
+ 185 0004 0148     		ldr	r0, .L18
+ 186              	.LVL9:
+ 187              		.loc 1 48 5 is_stmt 0 view .LVU35
+ 188 0006 FFF7FEFF 		bl	usart1_printf
+ 189              	.LVL10:
+  49:application/USART_receive.c **** }
+ 190              		.loc 1 49 1 view .LVU36
+ 191 000a 08BD     		pop	{r3, pc}
+ 192              	.L19:
+ 193              		.align	2
+ 194              	.L18:
+ 195 000c 00000000 		.word	.LC0
+ 196              		.cfi_endproc
+ 197              	.LFE72:
+ 199              		.section	.bss.usart_rx_data,"aw",%nobits
+ 200              		.align	2
+ 203              	usart_rx_data:
+ 204 0000 00000000 		.space	8
+ 204      00000000 
+ 205              		.global	pi_measure
+ 206              		.section	.bss.pi_measure,"aw",%nobits
+ 207              		.align	2
+ 210              	pi_measure:
+ 211 0000 00000000 		.space	4
+ 212              		.text
+ 213              	.Letext0:
+ 214              		.file 2 "/usr/arm-none-eabi/include/machine/_default_types.h"
+ 215              		.file 3 "/usr/arm-none-eabi/include/sys/_stdint.h"
+ 216              		.file 4 "Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xe.h"
+ 217              		.file 5 "Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h"
+ 218              		.file 6 "Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma.h"
+ 219              		.file 7 "Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h"
+ 220              		.file 8 "application/USART_receive.h"
+ 221              		.file 9 "/usr/arm-none-eabi/include/string.h"
+ 222              		.file 10 "bsp/bsp_usart.h"
+ARM GAS  /tmp/cca3BGBY.s 			page 6
+
+
+DEFINED SYMBOLS
+                            *ABS*:00000000 USART_receive.c
+     /tmp/cca3BGBY.s:19     .text.usart_ReceiveStart:00000000 $t
+     /tmp/cca3BGBY.s:25     .text.usart_ReceiveStart:00000000 usart_ReceiveStart
+     /tmp/cca3BGBY.s:54     .text.usart_ReceiveStart:0000001c $d
+     /tmp/cca3BGBY.s:203    .bss.usart_rx_data:00000000 usart_rx_data
+     /tmp/cca3BGBY.s:60     .text.HAL_UARTEx_RxEventCallback:00000000 $t
+     /tmp/cca3BGBY.s:66     .text.HAL_UARTEx_RxEventCallback:00000000 HAL_UARTEx_RxEventCallback
+     /tmp/cca3BGBY.s:152    .text.HAL_UARTEx_RxEventCallback:0000004c $d
+     /tmp/cca3BGBY.s:210    .bss.pi_measure:00000000 pi_measure
+     /tmp/cca3BGBY.s:160    .rodata.usart_SendState.str1.4:00000000 $d
+     /tmp/cca3BGBY.s:164    .text.usart_SendState:00000000 $t
+     /tmp/cca3BGBY.s:170    .text.usart_SendState:00000000 usart_SendState
+     /tmp/cca3BGBY.s:195    .text.usart_SendState:0000000c $d
+     /tmp/cca3BGBY.s:200    .bss.usart_rx_data:00000000 $d
+     /tmp/cca3BGBY.s:207    .bss.pi_measure:00000000 $d
+
+UNDEFINED SYMBOLS
+HAL_UARTEx_ReceiveToIdle_DMA
+huart1
+strchr
+usart1_printf

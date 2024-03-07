@@ -1,0 +1,425 @@
+ARM GAS  /tmp/ccZ7IcJ5.s 			page 1
+
+
+   1              		.cpu cortex-m3
+   2              		.arch armv7-m
+   3              		.fpu softvfp
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 1
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.file	"bsp_usart.c"
+  14              		.text
+  15              	.Ltext0:
+  16              		.cfi_sections	.debug_frame
+  17              		.file 1 "bsp/bsp_usart.c"
+  18              		.section	.text.usart1_printf,"ax",%progbits
+  19              		.align	1
+  20              		.global	usart1_printf
+  21              		.syntax unified
+  22              		.thumb
+  23              		.thumb_func
+  25              	usart1_printf:
+  26              	.LVL0:
+  27              	.LFB65:
+   1:bsp/bsp_usart.c **** #include "bsp_usart.h"
+   2:bsp/bsp_usart.c **** #include "main.h"
+   3:bsp/bsp_usart.c **** 
+   4:bsp/bsp_usart.c **** #include "printf.h"
+   5:bsp/bsp_usart.c **** 
+   6:bsp/bsp_usart.c **** #include <stdarg.h>
+   7:bsp/bsp_usart.c **** 
+   8:bsp/bsp_usart.c **** extern UART_HandleTypeDef huart1;
+   9:bsp/bsp_usart.c **** extern UART_HandleTypeDef huart2;
+  10:bsp/bsp_usart.c **** 
+  11:bsp/bsp_usart.c **** /**
+  12:bsp/bsp_usart.c ****  * @brief 串口调试输出
+  13:bsp/bsp_usart.c ****  *
+  14:bsp/bsp_usart.c ****  * @note 注意输出不要超过 USART1_TX_BUF_LEN 个字符
+  15:bsp/bsp_usart.c ****  */
+  16:bsp/bsp_usart.c **** void usart1_printf(const char *fmt, ...)
+  17:bsp/bsp_usart.c **** {
+  28              		.loc 1 17 1 view -0
+  29              		.cfi_startproc
+  30              		@ args = 4, pretend = 16, frame = 0
+  31              		@ frame_needed = 0, uses_anonymous_args = 1
+  32              		.loc 1 17 1 is_stmt 0 view .LVU1
+  33 0000 0FB4     		push	{r0, r1, r2, r3}
+  34              	.LCFI0:
+  35              		.cfi_def_cfa_offset 16
+  36              		.cfi_offset 0, -16
+  37              		.cfi_offset 1, -12
+  38              		.cfi_offset 2, -8
+  39              		.cfi_offset 3, -4
+  40 0002 38B5     		push	{r3, r4, r5, lr}
+  41              	.LCFI1:
+ARM GAS  /tmp/ccZ7IcJ5.s 			page 2
+
+
+  42              		.cfi_def_cfa_offset 32
+  43              		.cfi_offset 3, -32
+  44              		.cfi_offset 4, -28
+  45              		.cfi_offset 5, -24
+  46              		.cfi_offset 14, -20
+  47 0004 04AB     		add	r3, sp, #16
+  48 0006 53F8044B 		ldr	r4, [r3], #4
+  18:bsp/bsp_usart.c ****     static char tx_buf[USART1_TX_BUF_LEN] = {0};        // 必须使用static
+  49              		.loc 1 18 5 is_stmt 1 view .LVU2
+  19:bsp/bsp_usart.c ****     char *ptx_buf                         = &tx_buf[0]; // 不能使用static
+  50              		.loc 1 19 5 view .LVU3
+  51              	.LVL1:
+  20:bsp/bsp_usart.c ****     static va_list args;                                // 必须使用static
+  52              		.loc 1 20 5 view .LVU4
+  21:bsp/bsp_usart.c ****     static uint16_t len;                                // 必须使用static
+  53              		.loc 1 21 5 view .LVU5
+  22:bsp/bsp_usart.c ****     va_start(args, fmt);
+  54              		.loc 1 22 5 view .LVU6
+  55 000a 134A     		ldr	r2, .L5
+  56 000c 1360     		str	r3, [r2]
+  23:bsp/bsp_usart.c **** 
+  24:bsp/bsp_usart.c ****     if (!(HAL_UART_GetState(&huart1) == HAL_UART_STATE_READY || HAL_UART_GetState(&huart1) == HAL_U
+  57              		.loc 1 24 5 view .LVU7
+  58              		.loc 1 24 11 is_stmt 0 view .LVU8
+  59 000e 1348     		ldr	r0, .L5+4
+  60 0010 FFF7FEFF 		bl	HAL_UART_GetState
+  61              	.LVL2:
+  62              		.loc 1 24 8 discriminator 1 view .LVU9
+  63 0014 2028     		cmp	r0, #32
+  64 0016 04D0     		beq	.L2
+  65              		.loc 1 24 65 discriminator 1 view .LVU10
+  66 0018 1048     		ldr	r0, .L5+4
+  67 001a FFF7FEFF 		bl	HAL_UART_GetState
+  68              	.LVL3:
+  69              		.loc 1 24 9 discriminator 1 view .LVU11
+  70 001e 2228     		cmp	r0, #34
+  71 0020 15D1     		bne	.L1
+  72              	.L2:
+  25:bsp/bsp_usart.c ****         return;
+  26:bsp/bsp_usart.c ****     // return length of string
+  27:bsp/bsp_usart.c ****     // 返回字符串长度
+  28:bsp/bsp_usart.c ****     len = vsnprintf(ptx_buf, USART1_TX_BUF_LEN, fmt, args);
+  73              		.loc 1 28 5 is_stmt 1 view .LVU12
+  74              		.loc 1 28 11 is_stmt 0 view .LVU13
+  75 0022 0F4D     		ldr	r5, .L5+8
+  76 0024 0C4B     		ldr	r3, .L5
+  77 0026 1B68     		ldr	r3, [r3]
+  78 0028 2246     		mov	r2, r4
+  79 002a 8021     		movs	r1, #128
+  80 002c 2846     		mov	r0, r5
+  81 002e FFF7FEFF 		bl	vsnprintf_
+  82              	.LVL4:
+  83              		.loc 1 28 9 discriminator 1 view .LVU14
+  84 0032 82B2     		uxth	r2, r0
+  85 0034 0B4B     		ldr	r3, .L5+12
+  86 0036 1A80     		strh	r2, [r3]	@ movhi
+  29:bsp/bsp_usart.c ****     va_end(args);
+ARM GAS  /tmp/ccZ7IcJ5.s 			page 3
+
+
+  87              		.loc 1 29 5 is_stmt 1 view .LVU15
+  30:bsp/bsp_usart.c ****     HAL_UART_Transmit_DMA(&huart1, (uint8_t *)tx_buf, len);
+  88              		.loc 1 30 5 view .LVU16
+  89 0038 084C     		ldr	r4, .L5+4
+  90 003a 2946     		mov	r1, r5
+  91 003c 2046     		mov	r0, r4
+  92 003e FFF7FEFF 		bl	HAL_UART_Transmit_DMA
+  93              	.LVL5:
+  31:bsp/bsp_usart.c ****     __HAL_DMA_DISABLE_IT(huart1.hdmatx, DMA_IT_HT);
+  94              		.loc 1 31 5 view .LVU17
+  95 0042 A36B     		ldr	r3, [r4, #56]
+  96 0044 1A68     		ldr	r2, [r3]
+  97 0046 1368     		ldr	r3, [r2]
+  98 0048 23F00403 		bic	r3, r3, #4
+  99 004c 1360     		str	r3, [r2]
+ 100              	.L1:
+  32:bsp/bsp_usart.c **** }
+ 101              		.loc 1 32 1 is_stmt 0 view .LVU18
+ 102 004e BDE83840 		pop	{r3, r4, r5, lr}
+ 103              	.LCFI2:
+ 104              		.cfi_restore 14
+ 105              		.cfi_restore 5
+ 106              		.cfi_restore 4
+ 107              		.cfi_restore 3
+ 108              		.cfi_def_cfa_offset 16
+ 109 0052 04B0     		add	sp, sp, #16
+ 110              	.LCFI3:
+ 111              		.cfi_restore 3
+ 112              		.cfi_restore 2
+ 113              		.cfi_restore 1
+ 114              		.cfi_restore 0
+ 115              		.cfi_def_cfa_offset 0
+ 116 0054 7047     		bx	lr
+ 117              	.L6:
+ 118 0056 00BF     		.align	2
+ 119              	.L5:
+ 120 0058 00000000 		.word	args.4
+ 121 005c 00000000 		.word	huart1
+ 122 0060 00000000 		.word	tx_buf.5
+ 123 0064 00000000 		.word	len.3
+ 124              		.cfi_endproc
+ 125              	.LFE65:
+ 127              		.section	.text.usart2_printf,"ax",%progbits
+ 128              		.align	1
+ 129              		.global	usart2_printf
+ 130              		.syntax unified
+ 131              		.thumb
+ 132              		.thumb_func
+ 134              	usart2_printf:
+ 135              	.LVL6:
+ 136              	.LFB66:
+  33:bsp/bsp_usart.c **** 
+  34:bsp/bsp_usart.c **** void usart2_printf(const char *fmt, ...)
+  35:bsp/bsp_usart.c **** {
+ 137              		.loc 1 35 1 is_stmt 1 view -0
+ 138              		.cfi_startproc
+ 139              		@ args = 4, pretend = 16, frame = 0
+ARM GAS  /tmp/ccZ7IcJ5.s 			page 4
+
+
+ 140              		@ frame_needed = 0, uses_anonymous_args = 1
+ 141              		.loc 1 35 1 is_stmt 0 view .LVU20
+ 142 0000 0FB4     		push	{r0, r1, r2, r3}
+ 143              	.LCFI4:
+ 144              		.cfi_def_cfa_offset 16
+ 145              		.cfi_offset 0, -16
+ 146              		.cfi_offset 1, -12
+ 147              		.cfi_offset 2, -8
+ 148              		.cfi_offset 3, -4
+ 149 0002 38B5     		push	{r3, r4, r5, lr}
+ 150              	.LCFI5:
+ 151              		.cfi_def_cfa_offset 32
+ 152              		.cfi_offset 3, -32
+ 153              		.cfi_offset 4, -28
+ 154              		.cfi_offset 5, -24
+ 155              		.cfi_offset 14, -20
+ 156 0004 04AB     		add	r3, sp, #16
+ 157 0006 53F8044B 		ldr	r4, [r3], #4
+  36:bsp/bsp_usart.c ****     static char tx_buf[USART2_TX_BUF_LEN] = {0};        // 必须使用static
+ 158              		.loc 1 36 5 is_stmt 1 view .LVU21
+  37:bsp/bsp_usart.c ****     char *ptx_buf                         = &tx_buf[0]; // 不能使用static
+ 159              		.loc 1 37 5 view .LVU22
+ 160              	.LVL7:
+  38:bsp/bsp_usart.c ****     static va_list args;                                // 必须使用static
+ 161              		.loc 1 38 5 view .LVU23
+  39:bsp/bsp_usart.c ****     static uint16_t len;                                // 必须使用static
+ 162              		.loc 1 39 5 view .LVU24
+  40:bsp/bsp_usart.c ****     va_start(args, fmt);
+ 163              		.loc 1 40 5 view .LVU25
+ 164 000a 134A     		ldr	r2, .L11
+ 165 000c 1360     		str	r3, [r2]
+  41:bsp/bsp_usart.c **** 
+  42:bsp/bsp_usart.c ****     if (!(HAL_UART_GetState(&huart2) == HAL_UART_STATE_READY || HAL_UART_GetState(&huart2) == HAL_U
+ 166              		.loc 1 42 5 view .LVU26
+ 167              		.loc 1 42 11 is_stmt 0 view .LVU27
+ 168 000e 1348     		ldr	r0, .L11+4
+ 169 0010 FFF7FEFF 		bl	HAL_UART_GetState
+ 170              	.LVL8:
+ 171              		.loc 1 42 8 discriminator 1 view .LVU28
+ 172 0014 2028     		cmp	r0, #32
+ 173 0016 04D0     		beq	.L8
+ 174              		.loc 1 42 65 discriminator 1 view .LVU29
+ 175 0018 1048     		ldr	r0, .L11+4
+ 176 001a FFF7FEFF 		bl	HAL_UART_GetState
+ 177              	.LVL9:
+ 178              		.loc 1 42 9 discriminator 1 view .LVU30
+ 179 001e 2228     		cmp	r0, #34
+ 180 0020 15D1     		bne	.L7
+ 181              	.L8:
+  43:bsp/bsp_usart.c ****         return;
+  44:bsp/bsp_usart.c ****     // return length of string
+  45:bsp/bsp_usart.c ****     // 返回字符串长度
+  46:bsp/bsp_usart.c ****     len = vsnprintf(ptx_buf, USART1_TX_BUF_LEN, fmt, args);
+ 182              		.loc 1 46 5 is_stmt 1 view .LVU31
+ 183              		.loc 1 46 11 is_stmt 0 view .LVU32
+ 184 0022 0F4D     		ldr	r5, .L11+8
+ 185 0024 0C4B     		ldr	r3, .L11
+ARM GAS  /tmp/ccZ7IcJ5.s 			page 5
+
+
+ 186 0026 1B68     		ldr	r3, [r3]
+ 187 0028 2246     		mov	r2, r4
+ 188 002a 8021     		movs	r1, #128
+ 189 002c 2846     		mov	r0, r5
+ 190 002e FFF7FEFF 		bl	vsnprintf_
+ 191              	.LVL10:
+ 192              		.loc 1 46 9 discriminator 1 view .LVU33
+ 193 0032 82B2     		uxth	r2, r0
+ 194 0034 0B4B     		ldr	r3, .L11+12
+ 195 0036 1A80     		strh	r2, [r3]	@ movhi
+  47:bsp/bsp_usart.c ****     va_end(args);
+ 196              		.loc 1 47 5 is_stmt 1 view .LVU34
+  48:bsp/bsp_usart.c ****     HAL_UART_Transmit_DMA(&huart2, (uint8_t *)tx_buf, len);
+ 197              		.loc 1 48 5 view .LVU35
+ 198 0038 084C     		ldr	r4, .L11+4
+ 199 003a 2946     		mov	r1, r5
+ 200 003c 2046     		mov	r0, r4
+ 201 003e FFF7FEFF 		bl	HAL_UART_Transmit_DMA
+ 202              	.LVL11:
+  49:bsp/bsp_usart.c ****     __HAL_DMA_DISABLE_IT(huart2.hdmatx, DMA_IT_HT);
+ 203              		.loc 1 49 5 view .LVU36
+ 204 0042 A36B     		ldr	r3, [r4, #56]
+ 205 0044 1A68     		ldr	r2, [r3]
+ 206 0046 1368     		ldr	r3, [r2]
+ 207 0048 23F00403 		bic	r3, r3, #4
+ 208 004c 1360     		str	r3, [r2]
+ 209              	.L7:
+  50:bsp/bsp_usart.c **** }
+ 210              		.loc 1 50 1 is_stmt 0 view .LVU37
+ 211 004e BDE83840 		pop	{r3, r4, r5, lr}
+ 212              	.LCFI6:
+ 213              		.cfi_restore 14
+ 214              		.cfi_restore 5
+ 215              		.cfi_restore 4
+ 216              		.cfi_restore 3
+ 217              		.cfi_def_cfa_offset 16
+ 218 0052 04B0     		add	sp, sp, #16
+ 219              	.LCFI7:
+ 220              		.cfi_restore 3
+ 221              		.cfi_restore 2
+ 222              		.cfi_restore 1
+ 223              		.cfi_restore 0
+ 224              		.cfi_def_cfa_offset 0
+ 225 0054 7047     		bx	lr
+ 226              	.L12:
+ 227 0056 00BF     		.align	2
+ 228              	.L11:
+ 229 0058 00000000 		.word	args.1
+ 230 005c 00000000 		.word	huart2
+ 231 0060 00000000 		.word	tx_buf.2
+ 232 0064 00000000 		.word	len.0
+ 233              		.cfi_endproc
+ 234              	.LFE66:
+ 236              		.section	.text.HAL_UART_TxCpltCallback,"ax",%progbits
+ 237              		.align	1
+ 238              		.global	HAL_UART_TxCpltCallback
+ 239              		.syntax unified
+ARM GAS  /tmp/ccZ7IcJ5.s 			page 6
+
+
+ 240              		.thumb
+ 241              		.thumb_func
+ 243              	HAL_UART_TxCpltCallback:
+ 244              	.LVL12:
+ 245              	.LFB67:
+  51:bsp/bsp_usart.c **** 
+  52:bsp/bsp_usart.c **** void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
+  53:bsp/bsp_usart.c **** {
+ 246              		.loc 1 53 1 is_stmt 1 view -0
+ 247              		.cfi_startproc
+ 248              		@ args = 0, pretend = 0, frame = 0
+ 249              		@ frame_needed = 0, uses_anonymous_args = 0
+ 250              		@ link register save eliminated.
+  54:bsp/bsp_usart.c ****     if (huart == &huart1 || huart == &huart2) {
+ 251              		.loc 1 54 5 view .LVU39
+ 252              		.loc 1 54 8 is_stmt 0 view .LVU40
+ 253 0000 044B     		ldr	r3, .L16
+ 254 0002 9842     		cmp	r0, r3
+ 255 0004 02D0     		beq	.L14
+ 256              		.loc 1 54 26 discriminator 1 view .LVU41
+ 257 0006 044B     		ldr	r3, .L16+4
+ 258 0008 9842     		cmp	r0, r3
+ 259 000a 02D1     		bne	.L13
+ 260              	.L14:
+  55:bsp/bsp_usart.c ****         // 要改变 UART 的标志位为 READY (这可能是 HAL 库的 BUG)
+  56:bsp/bsp_usart.c ****         huart->gState = HAL_UART_STATE_READY;
+ 261              		.loc 1 56 9 is_stmt 1 view .LVU42
+ 262              		.loc 1 56 23 is_stmt 0 view .LVU43
+ 263 000c 2023     		movs	r3, #32
+ 264 000e 80F84130 		strb	r3, [r0, #65]
+ 265              	.L13:
+  57:bsp/bsp_usart.c ****     }
+  58:bsp/bsp_usart.c **** }
+ 266              		.loc 1 58 1 view .LVU44
+ 267 0012 7047     		bx	lr
+ 268              	.L17:
+ 269              		.align	2
+ 270              	.L16:
+ 271 0014 00000000 		.word	huart1
+ 272 0018 00000000 		.word	huart2
+ 273              		.cfi_endproc
+ 274              	.LFE67:
+ 276              		.section	.bss.len.0,"aw",%nobits
+ 277              		.align	1
+ 280              	len.0:
+ 281 0000 0000     		.space	2
+ 282              		.section	.bss.args.1,"aw",%nobits
+ 283              		.align	2
+ 286              	args.1:
+ 287 0000 00000000 		.space	4
+ 288              		.section	.bss.tx_buf.2,"aw",%nobits
+ 289              		.align	2
+ 292              	tx_buf.2:
+ 293 0000 00000000 		.space	128
+ 293      00000000 
+ 293      00000000 
+ 293      00000000 
+ARM GAS  /tmp/ccZ7IcJ5.s 			page 7
+
+
+ 293      00000000 
+ 294              		.section	.bss.len.3,"aw",%nobits
+ 295              		.align	1
+ 298              	len.3:
+ 299 0000 0000     		.space	2
+ 300              		.section	.bss.args.4,"aw",%nobits
+ 301              		.align	2
+ 304              	args.4:
+ 305 0000 00000000 		.space	4
+ 306              		.section	.bss.tx_buf.5,"aw",%nobits
+ 307              		.align	2
+ 310              	tx_buf.5:
+ 311 0000 00000000 		.space	128
+ 311      00000000 
+ 311      00000000 
+ 311      00000000 
+ 311      00000000 
+ 312              		.text
+ 313              	.Letext0:
+ 314              		.file 2 "/usr/arm-none-eabi/include/machine/_default_types.h"
+ 315              		.file 3 "/usr/arm-none-eabi/include/sys/_stdint.h"
+ 316              		.file 4 "Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xe.h"
+ 317              		.file 5 "/usr/lib/gcc/arm-none-eabi/13.2.0/include/stddef.h"
+ 318              		.file 6 "Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h"
+ 319              		.file 7 "Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma.h"
+ 320              		.file 8 "Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h"
+ 321              		.file 9 "/usr/lib/gcc/arm-none-eabi/13.2.0/include/stdarg.h"
+ 322              		.file 10 "components/printf/printf.h"
+ 323              		.file 11 "<built-in>"
+ARM GAS  /tmp/ccZ7IcJ5.s 			page 8
+
+
+DEFINED SYMBOLS
+                            *ABS*:00000000 bsp_usart.c
+     /tmp/ccZ7IcJ5.s:19     .text.usart1_printf:00000000 $t
+     /tmp/ccZ7IcJ5.s:25     .text.usart1_printf:00000000 usart1_printf
+     /tmp/ccZ7IcJ5.s:120    .text.usart1_printf:00000058 $d
+     /tmp/ccZ7IcJ5.s:304    .bss.args.4:00000000 args.4
+     /tmp/ccZ7IcJ5.s:310    .bss.tx_buf.5:00000000 tx_buf.5
+     /tmp/ccZ7IcJ5.s:298    .bss.len.3:00000000 len.3
+     /tmp/ccZ7IcJ5.s:128    .text.usart2_printf:00000000 $t
+     /tmp/ccZ7IcJ5.s:134    .text.usart2_printf:00000000 usart2_printf
+     /tmp/ccZ7IcJ5.s:229    .text.usart2_printf:00000058 $d
+     /tmp/ccZ7IcJ5.s:286    .bss.args.1:00000000 args.1
+     /tmp/ccZ7IcJ5.s:292    .bss.tx_buf.2:00000000 tx_buf.2
+     /tmp/ccZ7IcJ5.s:280    .bss.len.0:00000000 len.0
+     /tmp/ccZ7IcJ5.s:237    .text.HAL_UART_TxCpltCallback:00000000 $t
+     /tmp/ccZ7IcJ5.s:243    .text.HAL_UART_TxCpltCallback:00000000 HAL_UART_TxCpltCallback
+     /tmp/ccZ7IcJ5.s:271    .text.HAL_UART_TxCpltCallback:00000014 $d
+     /tmp/ccZ7IcJ5.s:277    .bss.len.0:00000000 $d
+     /tmp/ccZ7IcJ5.s:283    .bss.args.1:00000000 $d
+     /tmp/ccZ7IcJ5.s:289    .bss.tx_buf.2:00000000 $d
+     /tmp/ccZ7IcJ5.s:295    .bss.len.3:00000000 $d
+     /tmp/ccZ7IcJ5.s:301    .bss.args.4:00000000 $d
+     /tmp/ccZ7IcJ5.s:307    .bss.tx_buf.5:00000000 $d
+
+UNDEFINED SYMBOLS
+HAL_UART_GetState
+vsnprintf_
+HAL_UART_Transmit_DMA
+huart1
+huart2

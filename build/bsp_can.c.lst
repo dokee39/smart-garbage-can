@@ -1,0 +1,147 @@
+ARM GAS  /tmp/ccfvoy26.s 			page 1
+
+
+   1              		.cpu cortex-m3
+   2              		.arch armv7-m
+   3              		.fpu softvfp
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 1
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.file	"bsp_can.c"
+  14              		.text
+  15              	.Ltext0:
+  16              		.cfi_sections	.debug_frame
+  17              		.file 1 "bsp/bsp_can.c"
+  18              		.section	.text.can_filter_init,"ax",%progbits
+  19              		.align	1
+  20              		.global	can_filter_init
+  21              		.syntax unified
+  22              		.thumb
+  23              		.thumb_func
+  25              	can_filter_init:
+  26              	.LFB65:
+   1:bsp/bsp_can.c **** #include "bsp_can.h"
+   2:bsp/bsp_can.c **** #include "main.h"
+   3:bsp/bsp_can.c **** 
+   4:bsp/bsp_can.c **** extern CAN_HandleTypeDef hcan;
+   5:bsp/bsp_can.c **** 
+   6:bsp/bsp_can.c **** void can_filter_init(void)
+   7:bsp/bsp_can.c **** {
+  27              		.loc 1 7 1 view -0
+  28              		.cfi_startproc
+  29              		@ args = 0, pretend = 0, frame = 40
+  30              		@ frame_needed = 0, uses_anonymous_args = 0
+  31 0000 10B5     		push	{r4, lr}
+  32              	.LCFI0:
+  33              		.cfi_def_cfa_offset 8
+  34              		.cfi_offset 4, -8
+  35              		.cfi_offset 14, -4
+  36 0002 8AB0     		sub	sp, sp, #40
+  37              	.LCFI1:
+  38              		.cfi_def_cfa_offset 48
+   8:bsp/bsp_can.c **** 
+   9:bsp/bsp_can.c ****     CAN_FilterTypeDef can_filter_st;
+  39              		.loc 1 9 5 view .LVU1
+  10:bsp/bsp_can.c ****     can_filter_st.FilterActivation     = ENABLE;
+  40              		.loc 1 10 5 view .LVU2
+  41              		.loc 1 10 40 is_stmt 0 view .LVU3
+  42 0004 0122     		movs	r2, #1
+  43 0006 0892     		str	r2, [sp, #32]
+  11:bsp/bsp_can.c ****     can_filter_st.FilterMode           = CAN_FILTERMODE_IDMASK;
+  44              		.loc 1 11 5 is_stmt 1 view .LVU4
+  45              		.loc 1 11 40 is_stmt 0 view .LVU5
+  46 0008 0023     		movs	r3, #0
+  47 000a 0693     		str	r3, [sp, #24]
+ARM GAS  /tmp/ccfvoy26.s 			page 2
+
+
+  12:bsp/bsp_can.c ****     can_filter_st.FilterScale          = CAN_FILTERSCALE_32BIT;
+  48              		.loc 1 12 5 is_stmt 1 view .LVU6
+  49              		.loc 1 12 40 is_stmt 0 view .LVU7
+  50 000c 0792     		str	r2, [sp, #28]
+  13:bsp/bsp_can.c ****     can_filter_st.FilterIdHigh         = 0x0000;
+  51              		.loc 1 13 5 is_stmt 1 view .LVU8
+  52              		.loc 1 13 40 is_stmt 0 view .LVU9
+  53 000e 0093     		str	r3, [sp]
+  14:bsp/bsp_can.c ****     can_filter_st.FilterIdLow          = 0x0000;
+  54              		.loc 1 14 5 is_stmt 1 view .LVU10
+  55              		.loc 1 14 40 is_stmt 0 view .LVU11
+  56 0010 0193     		str	r3, [sp, #4]
+  15:bsp/bsp_can.c ****     can_filter_st.FilterMaskIdHigh     = 0x0000;
+  57              		.loc 1 15 5 is_stmt 1 view .LVU12
+  58              		.loc 1 15 40 is_stmt 0 view .LVU13
+  59 0012 0293     		str	r3, [sp, #8]
+  16:bsp/bsp_can.c ****     can_filter_st.FilterMaskIdLow      = 0x0000;
+  60              		.loc 1 16 5 is_stmt 1 view .LVU14
+  61              		.loc 1 16 40 is_stmt 0 view .LVU15
+  62 0014 0393     		str	r3, [sp, #12]
+  17:bsp/bsp_can.c ****     can_filter_st.FilterBank           = 0;
+  63              		.loc 1 17 5 is_stmt 1 view .LVU16
+  64              		.loc 1 17 40 is_stmt 0 view .LVU17
+  65 0016 0593     		str	r3, [sp, #20]
+  18:bsp/bsp_can.c ****     can_filter_st.FilterFIFOAssignment = CAN_RX_FIFO0;
+  66              		.loc 1 18 5 is_stmt 1 view .LVU18
+  67              		.loc 1 18 40 is_stmt 0 view .LVU19
+  68 0018 0493     		str	r3, [sp, #16]
+  19:bsp/bsp_can.c ****     HAL_CAN_ConfigFilter(&hcan, &can_filter_st);
+  69              		.loc 1 19 5 is_stmt 1 view .LVU20
+  70 001a 074C     		ldr	r4, .L3
+  71 001c 6946     		mov	r1, sp
+  72 001e 2046     		mov	r0, r4
+  73 0020 FFF7FEFF 		bl	HAL_CAN_ConfigFilter
+  74              	.LVL0:
+  20:bsp/bsp_can.c ****     HAL_CAN_Start(&hcan);
+  75              		.loc 1 20 5 view .LVU21
+  76 0024 2046     		mov	r0, r4
+  77 0026 FFF7FEFF 		bl	HAL_CAN_Start
+  78              	.LVL1:
+  21:bsp/bsp_can.c ****     HAL_CAN_ActivateNotification(&hcan, CAN_IT_RX_FIFO0_MSG_PENDING);
+  79              		.loc 1 21 5 view .LVU22
+  80 002a 0221     		movs	r1, #2
+  81 002c 2046     		mov	r0, r4
+  82 002e FFF7FEFF 		bl	HAL_CAN_ActivateNotification
+  83              	.LVL2:
+  22:bsp/bsp_can.c **** }
+  84              		.loc 1 22 1 is_stmt 0 view .LVU23
+  85 0032 0AB0     		add	sp, sp, #40
+  86              	.LCFI2:
+  87              		.cfi_def_cfa_offset 8
+  88              		@ sp needed
+  89 0034 10BD     		pop	{r4, pc}
+  90              	.L4:
+  91 0036 00BF     		.align	2
+  92              	.L3:
+  93 0038 00000000 		.word	hcan
+ARM GAS  /tmp/ccfvoy26.s 			page 3
+
+
+  94              		.cfi_endproc
+  95              	.LFE65:
+  97              		.text
+  98              	.Letext0:
+  99              		.file 2 "/usr/arm-none-eabi/include/machine/_default_types.h"
+ 100              		.file 3 "/usr/arm-none-eabi/include/sys/_stdint.h"
+ 101              		.file 4 "Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xe.h"
+ 102              		.file 5 "Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h"
+ 103              		.file 6 "Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h"
+ 104              		.file 7 "Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_can.h"
+ARM GAS  /tmp/ccfvoy26.s 			page 4
+
+
+DEFINED SYMBOLS
+                            *ABS*:00000000 bsp_can.c
+     /tmp/ccfvoy26.s:19     .text.can_filter_init:00000000 $t
+     /tmp/ccfvoy26.s:25     .text.can_filter_init:00000000 can_filter_init
+     /tmp/ccfvoy26.s:93     .text.can_filter_init:00000038 $d
+
+UNDEFINED SYMBOLS
+HAL_CAN_ConfigFilter
+HAL_CAN_Start
+HAL_CAN_ActivateNotification
+hcan

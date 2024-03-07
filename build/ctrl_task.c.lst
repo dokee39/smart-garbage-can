@@ -1,0 +1,966 @@
+ARM GAS  /tmp/ccJFQZL2.s 			page 1
+
+
+   1              		.cpu cortex-m3
+   2              		.arch armv7-m
+   3              		.fpu softvfp
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 1
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.file	"ctrl_task.c"
+  14              		.text
+  15              	.Ltext0:
+  16              		.cfi_sections	.debug_frame
+  17              		.file 1 "application/ctrl_task.c"
+  18              		.section	.text.ctrl_is_in_place,"ax",%progbits
+  19              		.align	1
+  20              		.syntax unified
+  21              		.thumb
+  22              		.thumb_func
+  24              	ctrl_is_in_place:
+  25              	.LVL0:
+  26              	.LFB73:
+   1:application/ctrl_task.c **** /**
+   2:application/ctrl_task.c ****  * @file ctrl_task.c
+   3:application/ctrl_task.c ****  * @author dokee (dokee.39@gmail.com)
+   4:application/ctrl_task.c ****  * @brief
+   5:application/ctrl_task.c ****  * @version 0.1
+   6:application/ctrl_task.c ****  * @date 2024-01-27
+   7:application/ctrl_task.c ****  *
+   8:application/ctrl_task.c ****  * @copyright Copyright (c) 2024
+   9:application/ctrl_task.c ****  *
+  10:application/ctrl_task.c ****  */
+  11:application/ctrl_task.c **** 
+  12:application/ctrl_task.c **** #include "ctrl_task.h"
+  13:application/ctrl_task.c **** 
+  14:application/ctrl_task.c **** /*
+  15:application/ctrl_task.c ****     TODO 现有问题
+  16:application/ctrl_task.c ****     > 光电开关和碰触开关的安装
+  17:application/ctrl_task.c ****     > 顶上 putter 位置装错了
+  18:application/ctrl_task.c ****     > 开合板阻挡打印件加长
+  19:application/ctrl_task.c ****     > 底下步进电机力太小
+  20:application/ctrl_task.c ****     > 步进电机轴套购买以及重新设计打印件
+  21:application/ctrl_task.c ****     > 法兰盘安装问题 (上一个解决了这一个应该也解决了)
+  22:application/ctrl_task.c ****     > 树莓派串口问题
+  23:application/ctrl_task.c ****     > 程序上推杆的添加及根据实际情况优化
+  24:application/ctrl_task.c ****     > 画板子及供电设计
+  25:application/ctrl_task.c **** */ 
+  26:application/ctrl_task.c **** 
+  27:application/ctrl_task.c **** #define ASHBIN_QUA_DISTANCE 800
+  28:application/ctrl_task.c **** #define ASHBIN_SPEED        12
+  29:application/ctrl_task.c **** #define ASHBIN_ADD          1
+  30:application/ctrl_task.c **** #define ASHBIN_COMPRESS_POS HARMFUL
+  31:application/ctrl_task.c **** 
+  32:application/ctrl_task.c **** #define BOARD_DISTANCE     8000
+ARM GAS  /tmp/ccJFQZL2.s 			page 2
+
+
+  33:application/ctrl_task.c **** #define BOARD_SPEED         150
+  34:application/ctrl_task.c **** #define BOARD_ADD           200
+  35:application/ctrl_task.c **** 
+  36:application/ctrl_task.c **** typedef enum {
+  37:application/ctrl_task.c ****     ALL_READY = 0,      // 垃圾桶准备就绪
+  38:application/ctrl_task.c ****     ASHBIN_TO_ENTRANCE, // 垃圾桶转到开口处
+  39:application/ctrl_task.c ****     BOARD_OPEN,         // 打开开合板
+  40:application/ctrl_task.c ****     ASHBIN_TO_COMPRESS, // 垃圾桶转到压缩处
+  41:application/ctrl_task.c ****     COMPRESS,           // 压缩
+  42:application/ctrl_task.c ****     BOARD_CLOSE,        // kai
+  43:application/ctrl_task.c **** } run_state_e;
+  44:application/ctrl_task.c **** // TODO 开合板打开后停留 500ms
+  45:application/ctrl_task.c **** 
+  46:application/ctrl_task.c **** typedef enum {
+  47:application/ctrl_task.c ****     CLOSE = 0,
+  48:application/ctrl_task.c ****     OPEN  = 1,
+  49:application/ctrl_task.c **** } board_pos_e;
+  50:application/ctrl_task.c **** 
+  51:application/ctrl_task.c **** typedef enum {
+  52:application/ctrl_task.c ****     RETRACTED    = 0, // 缩回态
+  53:application/ctrl_task.c ****     STRTCHING    = 1, // 正在伸长
+  54:application/ctrl_task.c ****     OVER_CURRENT = 2, // 压缩阻力导致过流
+  55:application/ctrl_task.c ****     STRTCHED     = 3, // 完全伸出
+  56:application/ctrl_task.c ****     RETRACTING   = 4, // 正在缩回
+  57:application/ctrl_task.c **** } putter_pos_e;
+  58:application/ctrl_task.c **** 
+  59:application/ctrl_task.c **** typedef struct
+  60:application/ctrl_task.c **** {
+  61:application/ctrl_task.c ****     garbage_type_e ashnin;
+  62:application/ctrl_task.c ****     board_pos_e board;
+  63:application/ctrl_task.c ****     putter_pos_e putter;
+  64:application/ctrl_task.c **** } motor_pos_t;
+  65:application/ctrl_task.c **** 
+  66:application/ctrl_task.c **** typedef struct
+  67:application/ctrl_task.c **** {
+  68:application/ctrl_task.c ****     run_state_e run_state;
+  69:application/ctrl_task.c ****     garbage_t garbage;
+  70:application/ctrl_task.c ****     motor_pos_t motor_pos;
+  71:application/ctrl_task.c **** } garbage_can_t;
+  72:application/ctrl_task.c **** 
+  73:application/ctrl_task.c **** static void ctrl_ashbin_run(garbage_type_e target_pos);
+  74:application/ctrl_task.c **** static void ctrl_board_run(board_pos_e target_pos);
+  75:application/ctrl_task.c **** static uint8_t ctrl_is_in_place(motor_id_e MOTOR_ID);
+  76:application/ctrl_task.c **** static void ctrl_compress(void);
+  77:application/ctrl_task.c **** static uint8_t ctrl_is_compressed(void);
+  78:application/ctrl_task.c **** 
+  79:application/ctrl_task.c **** static garbage_can_t garbage_can;
+  80:application/ctrl_task.c **** 
+  81:application/ctrl_task.c **** void ctrl_task(void const *argument)
+  82:application/ctrl_task.c **** {
+  83:application/ctrl_task.c ****     osDelay(200);
+  84:application/ctrl_task.c ****     usart_ReceiveStart();
+  85:application/ctrl_task.c ****     osDelay(2000); // 上电延时 2 秒等待 Emm_V5.0 闭环初始化完毕
+  86:application/ctrl_task.c **** 
+  87:application/ctrl_task.c ****     // TODO 检测树莓派是否在线？
+  88:application/ctrl_task.c ****     // TODO garbage_can 结构体的初始化
+  89:application/ctrl_task.c ****     // TODO ashbin 光电开关检测零位
+ARM GAS  /tmp/ccJFQZL2.s 			page 3
+
+
+  90:application/ctrl_task.c ****     // TODO board 碰触开关检测零位
+  91:application/ctrl_task.c **** 
+  92:application/ctrl_task.c ****     while (1) {
+  93:application/ctrl_task.c **** 
+  94:application/ctrl_task.c ****         switch (garbage_can.run_state) {
+  95:application/ctrl_task.c ****             case ALL_READY:
+  96:application/ctrl_task.c ****                 if (pi_measure.num > garbage_can.garbage.num) {
+  97:application/ctrl_task.c ****                     garbage_can.garbage = pi_measure;
+  98:application/ctrl_task.c ****                     ctrl_ashbin_run(garbage_can.garbage.type);
+  99:application/ctrl_task.c ****                     garbage_can.run_state++;
+ 100:application/ctrl_task.c ****                     Emm_V5_Read_Sys_Params((uint8_t)CAN_ASHBIN_ID, S_FLAG);
+ 101:application/ctrl_task.c ****                 }
+ 102:application/ctrl_task.c ****                 break;
+ 103:application/ctrl_task.c ****             case ASHBIN_TO_ENTRANCE:
+ 104:application/ctrl_task.c ****                 if (ctrl_is_in_place(MOTOR_ASHBIN_ID)) {
+ 105:application/ctrl_task.c ****                     ctrl_board_run(OPEN);
+ 106:application/ctrl_task.c ****                     garbage_can.run_state++;
+ 107:application/ctrl_task.c ****                     Emm_V5_Read_Sys_Params((uint8_t)CAN_BOARD_ID, S_FLAG);
+ 108:application/ctrl_task.c ****                 } else
+ 109:application/ctrl_task.c ****                     Emm_V5_Read_Sys_Params((uint8_t)CAN_ASHBIN_ID, S_FLAG);
+ 110:application/ctrl_task.c ****                 break;
+ 111:application/ctrl_task.c ****             case BOARD_OPEN:
+ 112:application/ctrl_task.c ****                 if (ctrl_is_in_place(MOTOR_BOARD_ID)) {
+ 113:application/ctrl_task.c ****                     if (garbage_can.garbage.type == RECYCLABLE) {
+ 114:application/ctrl_task.c ****                         garbage_can.run_state = ASHBIN_TO_COMPRESS;
+ 115:application/ctrl_task.c ****                         ctrl_ashbin_run(ASHBIN_COMPRESS_POS);
+ 116:application/ctrl_task.c ****                     } else
+ 117:application/ctrl_task.c ****                         garbage_can.run_state = BOARD_CLOSE;
+ 118:application/ctrl_task.c ****                     ctrl_board_run(CLOSE);
+ 119:application/ctrl_task.c ****                 }
+ 120:application/ctrl_task.c ****                 Emm_V5_Read_Sys_Params((uint8_t)CAN_BOARD_ID, S_FLAG);
+ 121:application/ctrl_task.c ****                 break;
+ 122:application/ctrl_task.c ****             case ASHBIN_TO_COMPRESS:
+ 123:application/ctrl_task.c ****                 if (ctrl_is_in_place(MOTOR_ASHBIN_ID)) {
+ 124:application/ctrl_task.c ****                     ctrl_compress(); // TODO
+ 125:application/ctrl_task.c ****                     garbage_can.run_state++;
+ 126:application/ctrl_task.c ****                 } else
+ 127:application/ctrl_task.c ****                     Emm_V5_Read_Sys_Params((uint8_t)CAN_ASHBIN_ID, S_FLAG);
+ 128:application/ctrl_task.c ****                 break;
+ 129:application/ctrl_task.c ****             case COMPRESS:
+ 130:application/ctrl_task.c ****                 // TODO
+ 131:application/ctrl_task.c ****                 garbage_can.run_state++;
+ 132:application/ctrl_task.c ****                 break;
+ 133:application/ctrl_task.c ****             case BOARD_CLOSE:
+ 134:application/ctrl_task.c ****                 if (ctrl_is_in_place(MOTOR_BOARD_ID))
+ 135:application/ctrl_task.c ****                     garbage_can.run_state = ALL_READY;
+ 136:application/ctrl_task.c ****                 else
+ 137:application/ctrl_task.c ****                     Emm_V5_Read_Sys_Params((uint8_t)CAN_BOARD_ID, S_FLAG);
+ 138:application/ctrl_task.c ****                 break;
+ 139:application/ctrl_task.c ****             default:
+ 140:application/ctrl_task.c ****                 break;
+ 141:application/ctrl_task.c ****         }
+ 142:application/ctrl_task.c **** 
+ 143:application/ctrl_task.c ****         if (xTaskGetTickCount() % 50 == 0)
+ 144:application/ctrl_task.c ****         {
+ 145:application/ctrl_task.c ****             if (garbage_can.run_state == ALL_READY)
+ 146:application/ctrl_task.c ****                 usart_SendState(READY);
+ARM GAS  /tmp/ccJFQZL2.s 			page 4
+
+
+ 147:application/ctrl_task.c ****             else
+ 148:application/ctrl_task.c ****                 usart_SendState(RUNNING);
+ 149:application/ctrl_task.c ****         }
+ 150:application/ctrl_task.c **** 
+ 151:application/ctrl_task.c ****         osDelay(1);
+ 152:application/ctrl_task.c ****     }
+ 153:application/ctrl_task.c **** }
+ 154:application/ctrl_task.c **** 
+ 155:application/ctrl_task.c **** static void ctrl_ashbin_run(garbage_type_e target_pos)
+ 156:application/ctrl_task.c **** {
+ 157:application/ctrl_task.c ****     int32_t journey = (int32_t)target_pos - (int32_t)garbage_can.motor_pos.ashnin;
+ 158:application/ctrl_task.c ****     if (journey == 3)
+ 159:application/ctrl_task.c ****         journey = -1;
+ 160:application/ctrl_task.c ****     else if (journey == -3)
+ 161:application/ctrl_task.c ****         journey = 1;
+ 162:application/ctrl_task.c **** 
+ 163:application/ctrl_task.c ****     if (journey >= 0)
+ 164:application/ctrl_task.c ****         Emm_V5_Pos_Control((uint8_t)CAN_ASHBIN_ID, 1, ASHBIN_SPEED, ASHBIN_ADD, ASHBIN_QUA_DISTANCE
+ 165:application/ctrl_task.c ****     else
+ 166:application/ctrl_task.c ****         Emm_V5_Pos_Control((uint8_t)CAN_ASHBIN_ID, 0, ASHBIN_SPEED, ASHBIN_ADD, -ASHBIN_QUA_DISTANC
+ 167:application/ctrl_task.c **** 
+ 168:application/ctrl_task.c ****     // 检测返回命令 // 可选 错误命令判断以及避免死循环
+ 169:application/ctrl_task.c ****     while (motor_measure[MOTOR_ASHBIN_ID].func_code != 0xFD);
+ 170:application/ctrl_task.c **** 
+ 171:application/ctrl_task.c ****     garbage_can.motor_pos.ashnin = target_pos;
+ 172:application/ctrl_task.c **** }
+ 173:application/ctrl_task.c **** 
+ 174:application/ctrl_task.c **** static void ctrl_board_run(board_pos_e target_pos)
+ 175:application/ctrl_task.c **** {
+ 176:application/ctrl_task.c ****     if (garbage_can.motor_pos.board != target_pos) {
+ 177:application/ctrl_task.c ****         if (target_pos == OPEN)
+ 178:application/ctrl_task.c ****             Emm_V5_Pos_Control((uint8_t)CAN_BOARD_ID, 0, BOARD_SPEED, BOARD_ADD, BOARD_DISTANCE, 0,
+ 179:application/ctrl_task.c ****         else
+ 180:application/ctrl_task.c ****             Emm_V5_Pos_Control((uint8_t)CAN_BOARD_ID, 1, BOARD_SPEED, BOARD_ADD, BOARD_DISTANCE, 0,
+ 181:application/ctrl_task.c ****     }
+ 182:application/ctrl_task.c **** 
+ 183:application/ctrl_task.c ****     // 检测返回命令 // 可选 错误命令判断以及避免死循环
+ 184:application/ctrl_task.c ****     while (motor_measure[MOTOR_BOARD_ID].func_code != 0xFD);
+ 185:application/ctrl_task.c **** 
+ 186:application/ctrl_task.c ****     garbage_can.motor_pos.board = target_pos;
+ 187:application/ctrl_task.c **** }
+ 188:application/ctrl_task.c **** 
+ 189:application/ctrl_task.c **** /**
+ 190:application/ctrl_task.c ****  * @brief 到位检测
+ 191:application/ctrl_task.c ****  *
+ 192:application/ctrl_task.c ****  * @param MOTOR_ID
+ 193:application/ctrl_task.c ****  * @return uint8_t 0 not in place; 1 in place
+ 194:application/ctrl_task.c ****  */
+ 195:application/ctrl_task.c **** static uint8_t ctrl_is_in_place(motor_id_e MOTOR_ID)
+ 196:application/ctrl_task.c **** {
+  27              		.loc 1 196 1 view -0
+  28              		.cfi_startproc
+  29              		@ args = 0, pretend = 0, frame = 0
+  30              		@ frame_needed = 0, uses_anonymous_args = 0
+  31              		@ link register save eliminated.
+ 197:application/ctrl_task.c ****     if (motor_measure[MOTOR_ID].func_code == 0x3A)
+  32              		.loc 1 197 5 view .LVU1
+ARM GAS  /tmp/ccJFQZL2.s 			page 5
+
+
+  33              		.loc 1 197 32 is_stmt 0 view .LVU2
+  34 0000 00EB8013 		add	r3, r0, r0, lsl #6
+  35 0004 0B4A     		ldr	r2, .L9
+  36 0006 D35C     		ldrb	r3, [r2, r3]	@ zero_extendqisi2
+  37              		.loc 1 197 8 view .LVU3
+  38 0008 3A2B     		cmp	r3, #58
+  39 000a 01D0     		beq	.L6
+ 198:application/ctrl_task.c ****         if (motor_measure[MOTOR_ID].data[1] == 0x6B && (motor_measure[MOTOR_ID].data[0] & 0x02) == 
+ 199:application/ctrl_task.c ****             return 1;
+ 200:application/ctrl_task.c ****     // 可选 清除 func_code 以及 0x6B
+ 201:application/ctrl_task.c ****     return 0;
+  40              		.loc 1 201 12 view .LVU4
+  41 000c 0020     		movs	r0, #0
+  42              	.LVL1:
+  43              		.loc 1 201 12 view .LVU5
+  44 000e 7047     		bx	lr
+  45              	.LVL2:
+  46              	.L6:
+ 198:application/ctrl_task.c ****         if (motor_measure[MOTOR_ID].data[1] == 0x6B && (motor_measure[MOTOR_ID].data[0] & 0x02) == 
+  47              		.loc 1 198 9 is_stmt 1 view .LVU6
+ 198:application/ctrl_task.c ****         if (motor_measure[MOTOR_ID].data[1] == 0x6B && (motor_measure[MOTOR_ID].data[0] & 0x02) == 
+  48              		.loc 1 198 41 is_stmt 0 view .LVU7
+  49 0010 00EB8012 		add	r2, r0, r0, lsl #6
+  50 0014 074B     		ldr	r3, .L9
+  51 0016 1344     		add	r3, r3, r2
+  52 0018 9B78     		ldrb	r3, [r3, #2]	@ zero_extendqisi2
+ 198:application/ctrl_task.c ****         if (motor_measure[MOTOR_ID].data[1] == 0x6B && (motor_measure[MOTOR_ID].data[0] & 0x02) == 
+  53              		.loc 1 198 12 view .LVU8
+  54 001a 6B2B     		cmp	r3, #107
+  55 001c 01D0     		beq	.L7
+  56              		.loc 1 201 12 view .LVU9
+  57 001e 0020     		movs	r0, #0
+  58              	.LVL3:
+  59              		.loc 1 201 12 view .LVU10
+  60 0020 7047     		bx	lr
+  61              	.LVL4:
+  62              	.L7:
+ 198:application/ctrl_task.c ****         if (motor_measure[MOTOR_ID].data[1] == 0x6B && (motor_measure[MOTOR_ID].data[0] & 0x02) == 
+  63              		.loc 1 198 85 discriminator 1 view .LVU11
+  64 0022 044B     		ldr	r3, .L9
+  65 0024 1344     		add	r3, r3, r2
+  66 0026 5878     		ldrb	r0, [r3, #1]	@ zero_extendqisi2
+  67              	.LVL5:
+ 198:application/ctrl_task.c ****         if (motor_measure[MOTOR_ID].data[1] == 0x6B && (motor_measure[MOTOR_ID].data[0] & 0x02) == 
+  68              		.loc 1 198 53 discriminator 1 view .LVU12
+  69 0028 10F00200 		ands	r0, r0, #2
+  70 002c 00D1     		bne	.L8
+  71              	.L2:
+ 202:application/ctrl_task.c **** }
+  72              		.loc 1 202 1 view .LVU13
+  73 002e 7047     		bx	lr
+  74              	.L8:
+ 199:application/ctrl_task.c ****     // 可选 清除 func_code 以及 0x6B
+  75              		.loc 1 199 20 view .LVU14
+  76 0030 0120     		movs	r0, #1
+  77 0032 FCE7     		b	.L2
+  78              	.L10:
+ARM GAS  /tmp/ccJFQZL2.s 			page 6
+
+
+  79              		.align	2
+  80              	.L9:
+  81 0034 00000000 		.word	motor_measure
+  82              		.cfi_endproc
+  83              	.LFE73:
+  85              		.section	.text.ctrl_ashbin_run,"ax",%progbits
+  86              		.align	1
+  87              		.syntax unified
+  88              		.thumb
+  89              		.thumb_func
+  91              	ctrl_ashbin_run:
+  92              	.LVL6:
+  93              	.LFB71:
+ 156:application/ctrl_task.c ****     int32_t journey = (int32_t)target_pos - (int32_t)garbage_can.motor_pos.ashnin;
+  94              		.loc 1 156 1 is_stmt 1 view -0
+  95              		.cfi_startproc
+  96              		@ args = 0, pretend = 0, frame = 0
+  97              		@ frame_needed = 0, uses_anonymous_args = 0
+ 156:application/ctrl_task.c ****     int32_t journey = (int32_t)target_pos - (int32_t)garbage_can.motor_pos.ashnin;
+  98              		.loc 1 156 1 is_stmt 0 view .LVU16
+  99 0000 10B5     		push	{r4, lr}
+ 100              	.LCFI0:
+ 101              		.cfi_def_cfa_offset 8
+ 102              		.cfi_offset 4, -8
+ 103              		.cfi_offset 14, -4
+ 104 0002 84B0     		sub	sp, sp, #16
+ 105              	.LCFI1:
+ 106              		.cfi_def_cfa_offset 24
+ 107 0004 0446     		mov	r4, r0
+ 157:application/ctrl_task.c ****     if (journey == 3)
+ 108              		.loc 1 157 5 is_stmt 1 view .LVU17
+ 157:application/ctrl_task.c ****     if (journey == 3)
+ 109              		.loc 1 157 75 is_stmt 0 view .LVU18
+ 110 0006 184B     		ldr	r3, .L19
+ 111 0008 9B79     		ldrb	r3, [r3, #6]	@ zero_extendqisi2
+ 157:application/ctrl_task.c ****     if (journey == 3)
+ 112              		.loc 1 157 13 view .LVU19
+ 113 000a C31A     		subs	r3, r0, r3
+ 114              	.LVL7:
+ 158:application/ctrl_task.c ****         journey = -1;
+ 115              		.loc 1 158 5 is_stmt 1 view .LVU20
+ 158:application/ctrl_task.c ****         journey = -1;
+ 116              		.loc 1 158 8 is_stmt 0 view .LVU21
+ 117 000c 032B     		cmp	r3, #3
+ 118 000e 1CD0     		beq	.L16
+ 160:application/ctrl_task.c ****         journey = 1;
+ 119              		.loc 1 160 10 is_stmt 1 view .LVU22
+ 160:application/ctrl_task.c ****         journey = 1;
+ 120              		.loc 1 160 13 is_stmt 0 view .LVU23
+ 121 0010 13F1030F 		cmn	r3, #3
+ 122 0014 17D0     		beq	.L17
+ 163:application/ctrl_task.c ****         Emm_V5_Pos_Control((uint8_t)CAN_ASHBIN_ID, 1, ASHBIN_SPEED, ASHBIN_ADD, ASHBIN_QUA_DISTANCE
+ 123              		.loc 1 163 5 is_stmt 1 view .LVU24
+ 163:application/ctrl_task.c ****         Emm_V5_Pos_Control((uint8_t)CAN_ASHBIN_ID, 1, ASHBIN_SPEED, ASHBIN_ADD, ASHBIN_QUA_DISTANCE
+ 124              		.loc 1 163 8 is_stmt 0 view .LVU25
+ 125 0016 002B     		cmp	r3, #0
+ 126 0018 19DB     		blt	.L12
+ARM GAS  /tmp/ccJFQZL2.s 			page 7
+
+
+ 127              	.LVL8:
+ 128              	.L13:
+ 164:application/ctrl_task.c ****     else
+ 129              		.loc 1 164 9 is_stmt 1 view .LVU26
+ 164:application/ctrl_task.c ****     else
+ 130              		.loc 1 164 101 is_stmt 0 view .LVU27
+ 131 001a 4FF44872 		mov	r2, #800
+ 132 001e 02FB03F3 		mul	r3, r2, r3
+ 164:application/ctrl_task.c ****     else
+ 133              		.loc 1 164 9 view .LVU28
+ 134 0022 0022     		movs	r2, #0
+ 135 0024 0292     		str	r2, [sp, #8]
+ 136 0026 0192     		str	r2, [sp, #4]
+ 137 0028 0093     		str	r3, [sp]
+ 138 002a 0123     		movs	r3, #1
+ 139 002c 0C22     		movs	r2, #12
+ 140 002e 1946     		mov	r1, r3
+ 141 0030 1846     		mov	r0, r3
+ 142              	.LVL9:
+ 164:application/ctrl_task.c ****     else
+ 143              		.loc 1 164 9 view .LVU29
+ 144 0032 FFF7FEFF 		bl	Emm_V5_Pos_Control
+ 145              	.LVL10:
+ 146              	.L15:
+ 169:application/ctrl_task.c **** 
+ 147              		.loc 1 169 53 is_stmt 1 discriminator 1 view .LVU30
+ 169:application/ctrl_task.c **** 
+ 148              		.loc 1 169 42 is_stmt 0 discriminator 1 view .LVU31
+ 149 0036 0D4B     		ldr	r3, .L19+4
+ 150 0038 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 169:application/ctrl_task.c **** 
+ 151              		.loc 1 169 53 discriminator 1 view .LVU32
+ 152 003a FD2B     		cmp	r3, #253
+ 153 003c FBD1     		bne	.L15
+ 171:application/ctrl_task.c **** }
+ 154              		.loc 1 171 5 is_stmt 1 view .LVU33
+ 171:application/ctrl_task.c **** }
+ 155              		.loc 1 171 34 is_stmt 0 view .LVU34
+ 156 003e 0A4B     		ldr	r3, .L19
+ 157 0040 9C71     		strb	r4, [r3, #6]
+ 172:application/ctrl_task.c **** 
+ 158              		.loc 1 172 1 view .LVU35
+ 159 0042 04B0     		add	sp, sp, #16
+ 160              	.LCFI2:
+ 161              		.cfi_remember_state
+ 162              		.cfi_def_cfa_offset 8
+ 163              		@ sp needed
+ 164 0044 10BD     		pop	{r4, pc}
+ 165              	.LVL11:
+ 166              	.L17:
+ 167              	.LCFI3:
+ 168              		.cfi_restore_state
+ 161:application/ctrl_task.c **** 
+ 169              		.loc 1 161 17 view .LVU36
+ 170 0046 0123     		movs	r3, #1
+ 171              	.LVL12:
+ 161:application/ctrl_task.c **** 
+ARM GAS  /tmp/ccJFQZL2.s 			page 8
+
+
+ 172              		.loc 1 161 17 view .LVU37
+ 173 0048 E7E7     		b	.L13
+ 174              	.LVL13:
+ 175              	.L16:
+ 159:application/ctrl_task.c ****     else if (journey == -3)
+ 176              		.loc 1 159 17 view .LVU38
+ 177 004a 4FF0FF33 		mov	r3, #-1
+ 178              	.LVL14:
+ 179              	.L12:
+ 166:application/ctrl_task.c **** 
+ 180              		.loc 1 166 9 is_stmt 1 view .LVU39
+ 166:application/ctrl_task.c **** 
+ 181              		.loc 1 166 102 is_stmt 0 view .LVU40
+ 182 004e 084A     		ldr	r2, .L19+8
+ 183 0050 02FB03F3 		mul	r3, r2, r3
+ 166:application/ctrl_task.c **** 
+ 184              		.loc 1 166 9 view .LVU41
+ 185 0054 0021     		movs	r1, #0
+ 186 0056 0291     		str	r1, [sp, #8]
+ 187 0058 0191     		str	r1, [sp, #4]
+ 188 005a 0093     		str	r3, [sp]
+ 189 005c 0123     		movs	r3, #1
+ 190 005e 0C22     		movs	r2, #12
+ 191 0060 1846     		mov	r0, r3
+ 192              	.LVL15:
+ 166:application/ctrl_task.c **** 
+ 193              		.loc 1 166 9 view .LVU42
+ 194 0062 FFF7FEFF 		bl	Emm_V5_Pos_Control
+ 195              	.LVL16:
+ 196 0066 E6E7     		b	.L15
+ 197              	.L20:
+ 198              		.align	2
+ 199              	.L19:
+ 200 0068 00000000 		.word	garbage_can
+ 201 006c 00000000 		.word	motor_measure
+ 202 0070 E0FCFFFF 		.word	-800
+ 203              		.cfi_endproc
+ 204              	.LFE71:
+ 206              		.section	.text.ctrl_board_run,"ax",%progbits
+ 207              		.align	1
+ 208              		.syntax unified
+ 209              		.thumb
+ 210              		.thumb_func
+ 212              	ctrl_board_run:
+ 213              	.LVL17:
+ 214              	.LFB72:
+ 175:application/ctrl_task.c ****     if (garbage_can.motor_pos.board != target_pos) {
+ 215              		.loc 1 175 1 is_stmt 1 view -0
+ 216              		.cfi_startproc
+ 217              		@ args = 0, pretend = 0, frame = 0
+ 218              		@ frame_needed = 0, uses_anonymous_args = 0
+ 175:application/ctrl_task.c ****     if (garbage_can.motor_pos.board != target_pos) {
+ 219              		.loc 1 175 1 is_stmt 0 view .LVU44
+ 220 0000 10B5     		push	{r4, lr}
+ 221              	.LCFI4:
+ 222              		.cfi_def_cfa_offset 8
+ 223              		.cfi_offset 4, -8
+ARM GAS  /tmp/ccJFQZL2.s 			page 9
+
+
+ 224              		.cfi_offset 14, -4
+ 225 0002 84B0     		sub	sp, sp, #16
+ 226              	.LCFI5:
+ 227              		.cfi_def_cfa_offset 24
+ 228 0004 0446     		mov	r4, r0
+ 176:application/ctrl_task.c ****         if (target_pos == OPEN)
+ 229              		.loc 1 176 5 is_stmt 1 view .LVU45
+ 176:application/ctrl_task.c ****         if (target_pos == OPEN)
+ 230              		.loc 1 176 30 is_stmt 0 view .LVU46
+ 231 0006 134B     		ldr	r3, .L27
+ 232 0008 DB79     		ldrb	r3, [r3, #7]	@ zero_extendqisi2
+ 176:application/ctrl_task.c ****         if (target_pos == OPEN)
+ 233              		.loc 1 176 8 view .LVU47
+ 234 000a 8342     		cmp	r3, r0
+ 235 000c 0DD0     		beq	.L24
+ 177:application/ctrl_task.c ****             Emm_V5_Pos_Control((uint8_t)CAN_BOARD_ID, 0, BOARD_SPEED, BOARD_ADD, BOARD_DISTANCE, 0,
+ 236              		.loc 1 177 9 is_stmt 1 view .LVU48
+ 177:application/ctrl_task.c ****             Emm_V5_Pos_Control((uint8_t)CAN_BOARD_ID, 0, BOARD_SPEED, BOARD_ADD, BOARD_DISTANCE, 0,
+ 237              		.loc 1 177 12 is_stmt 0 view .LVU49
+ 238 000e 0128     		cmp	r0, #1
+ 239 0010 14D0     		beq	.L26
+ 180:application/ctrl_task.c ****     }
+ 240              		.loc 1 180 13 is_stmt 1 view .LVU50
+ 241 0012 0023     		movs	r3, #0
+ 242 0014 0293     		str	r3, [sp, #8]
+ 243 0016 0193     		str	r3, [sp, #4]
+ 244 0018 4FF4FA53 		mov	r3, #8000
+ 245 001c 0093     		str	r3, [sp]
+ 246 001e C823     		movs	r3, #200
+ 247 0020 9622     		movs	r2, #150
+ 248 0022 0121     		movs	r1, #1
+ 249 0024 0220     		movs	r0, #2
+ 250              	.LVL18:
+ 180:application/ctrl_task.c ****     }
+ 251              		.loc 1 180 13 is_stmt 0 view .LVU51
+ 252 0026 FFF7FEFF 		bl	Emm_V5_Pos_Control
+ 253              	.LVL19:
+ 254              	.L24:
+ 184:application/ctrl_task.c **** 
+ 255              		.loc 1 184 52 is_stmt 1 discriminator 1 view .LVU52
+ 184:application/ctrl_task.c **** 
+ 256              		.loc 1 184 41 is_stmt 0 discriminator 1 view .LVU53
+ 257 002a 0B4B     		ldr	r3, .L27+4
+ 258 002c 93F84130 		ldrb	r3, [r3, #65]	@ zero_extendqisi2
+ 184:application/ctrl_task.c **** 
+ 259              		.loc 1 184 52 discriminator 1 view .LVU54
+ 260 0030 FD2B     		cmp	r3, #253
+ 261 0032 FAD1     		bne	.L24
+ 186:application/ctrl_task.c **** }
+ 262              		.loc 1 186 5 is_stmt 1 view .LVU55
+ 186:application/ctrl_task.c **** }
+ 263              		.loc 1 186 33 is_stmt 0 view .LVU56
+ 264 0034 074B     		ldr	r3, .L27
+ 265 0036 DC71     		strb	r4, [r3, #7]
+ 187:application/ctrl_task.c **** 
+ 266              		.loc 1 187 1 view .LVU57
+ 267 0038 04B0     		add	sp, sp, #16
+ARM GAS  /tmp/ccJFQZL2.s 			page 10
+
+
+ 268              	.LCFI6:
+ 269              		.cfi_remember_state
+ 270              		.cfi_def_cfa_offset 8
+ 271              		@ sp needed
+ 272 003a 10BD     		pop	{r4, pc}
+ 273              	.LVL20:
+ 274              	.L26:
+ 275              	.LCFI7:
+ 276              		.cfi_restore_state
+ 178:application/ctrl_task.c ****         else
+ 277              		.loc 1 178 13 is_stmt 1 view .LVU58
+ 278 003c 0021     		movs	r1, #0
+ 279 003e 0291     		str	r1, [sp, #8]
+ 280 0040 0191     		str	r1, [sp, #4]
+ 281 0042 4FF4FA53 		mov	r3, #8000
+ 282 0046 0093     		str	r3, [sp]
+ 283 0048 C823     		movs	r3, #200
+ 284 004a 9622     		movs	r2, #150
+ 285 004c 0220     		movs	r0, #2
+ 286              	.LVL21:
+ 178:application/ctrl_task.c ****         else
+ 287              		.loc 1 178 13 is_stmt 0 view .LVU59
+ 288 004e FFF7FEFF 		bl	Emm_V5_Pos_Control
+ 289              	.LVL22:
+ 290 0052 EAE7     		b	.L24
+ 291              	.L28:
+ 292              		.align	2
+ 293              	.L27:
+ 294 0054 00000000 		.word	garbage_can
+ 295 0058 00000000 		.word	motor_measure
+ 296              		.cfi_endproc
+ 297              	.LFE72:
+ 299              		.section	.text.ctrl_task,"ax",%progbits
+ 300              		.align	1
+ 301              		.global	ctrl_task
+ 302              		.syntax unified
+ 303              		.thumb
+ 304              		.thumb_func
+ 306              	ctrl_task:
+ 307              	.LVL23:
+ 308              	.LFB70:
+  82:application/ctrl_task.c ****     osDelay(200);
+ 309              		.loc 1 82 1 is_stmt 1 view -0
+ 310              		.cfi_startproc
+ 311              		@ Volatile: function does not return.
+ 312              		@ args = 0, pretend = 0, frame = 0
+ 313              		@ frame_needed = 0, uses_anonymous_args = 0
+  82:application/ctrl_task.c ****     osDelay(200);
+ 314              		.loc 1 82 1 is_stmt 0 view .LVU61
+ 315 0000 08B5     		push	{r3, lr}
+ 316              	.LCFI8:
+ 317              		.cfi_def_cfa_offset 8
+ 318              		.cfi_offset 3, -8
+ 319              		.cfi_offset 14, -4
+  83:application/ctrl_task.c ****     usart_ReceiveStart();
+ 320              		.loc 1 83 5 is_stmt 1 view .LVU62
+ 321 0002 C820     		movs	r0, #200
+ARM GAS  /tmp/ccJFQZL2.s 			page 11
+
+
+ 322              	.LVL24:
+  83:application/ctrl_task.c ****     usart_ReceiveStart();
+ 323              		.loc 1 83 5 is_stmt 0 view .LVU63
+ 324 0004 FFF7FEFF 		bl	osDelay
+ 325              	.LVL25:
+  84:application/ctrl_task.c ****     osDelay(2000); // 上电延时 2 秒等待 Emm_V5.0 闭环初始化完毕
+ 326              		.loc 1 84 5 is_stmt 1 view .LVU64
+ 327 0008 FFF7FEFF 		bl	usart_ReceiveStart
+ 328              	.LVL26:
+  85:application/ctrl_task.c **** 
+ 329              		.loc 1 85 5 view .LVU65
+ 330 000c 4FF4FA60 		mov	r0, #2000
+ 331 0010 FFF7FEFF 		bl	osDelay
+ 332              	.LVL27:
+ 333 0014 4FE0     		b	.L46
+ 334              	.L37:
+  96:application/ctrl_task.c ****                     garbage_can.garbage = pi_measure;
+ 335              		.loc 1 96 17 view .LVU66
+  96:application/ctrl_task.c ****                     garbage_can.garbage = pi_measure;
+ 336              		.loc 1 96 31 is_stmt 0 view .LVU67
+ 337 0016 454B     		ldr	r3, .L50
+ 338 0018 5A88     		ldrh	r2, [r3, #2]
+  96:application/ctrl_task.c ****                     garbage_can.garbage = pi_measure;
+ 339              		.loc 1 96 57 view .LVU68
+ 340 001a 454B     		ldr	r3, .L50+4
+ 341 001c 9B88     		ldrh	r3, [r3, #4]
+  96:application/ctrl_task.c ****                     garbage_can.garbage = pi_measure;
+ 342              		.loc 1 96 20 view .LVU69
+ 343 001e 9A42     		cmp	r2, r3
+ 344 0020 35D9     		bls	.L30
+  97:application/ctrl_task.c ****                     ctrl_ashbin_run(garbage_can.garbage.type);
+ 345              		.loc 1 97 21 is_stmt 1 view .LVU70
+  97:application/ctrl_task.c ****                     ctrl_ashbin_run(garbage_can.garbage.type);
+ 346              		.loc 1 97 41 is_stmt 0 view .LVU71
+ 347 0022 434C     		ldr	r4, .L50+4
+ 348 0024 414B     		ldr	r3, .L50
+ 349 0026 1B68     		ldr	r3, [r3]	@ unaligned
+ 350 0028 C4F80230 		str	r3, [r4, #2]	@ unaligned
+  98:application/ctrl_task.c ****                     garbage_can.run_state++;
+ 351              		.loc 1 98 21 is_stmt 1 view .LVU72
+ 352 002c A078     		ldrb	r0, [r4, #2]	@ zero_extendqisi2
+ 353 002e FFF7FEFF 		bl	ctrl_ashbin_run
+ 354              	.LVL28:
+  99:application/ctrl_task.c ****                     Emm_V5_Read_Sys_Params((uint8_t)CAN_ASHBIN_ID, S_FLAG);
+ 355              		.loc 1 99 21 view .LVU73
+  99:application/ctrl_task.c ****                     Emm_V5_Read_Sys_Params((uint8_t)CAN_ASHBIN_ID, S_FLAG);
+ 356              		.loc 1 99 32 is_stmt 0 view .LVU74
+ 357 0032 2378     		ldrb	r3, [r4]	@ zero_extendqisi2
+  99:application/ctrl_task.c ****                     Emm_V5_Read_Sys_Params((uint8_t)CAN_ASHBIN_ID, S_FLAG);
+ 358              		.loc 1 99 42 view .LVU75
+ 359 0034 0133     		adds	r3, r3, #1
+ 360 0036 2370     		strb	r3, [r4]
+ 100:application/ctrl_task.c ****                 }
+ 361              		.loc 1 100 21 is_stmt 1 view .LVU76
+ 362 0038 0D21     		movs	r1, #13
+ 363 003a 0120     		movs	r0, #1
+ 364 003c FFF7FEFF 		bl	Emm_V5_Read_Sys_Params
+ARM GAS  /tmp/ccJFQZL2.s 			page 12
+
+
+ 365              	.LVL29:
+ 366 0040 25E0     		b	.L30
+ 367              	.L36:
+ 104:application/ctrl_task.c ****                     ctrl_board_run(OPEN);
+ 368              		.loc 1 104 17 view .LVU77
+ 104:application/ctrl_task.c ****                     ctrl_board_run(OPEN);
+ 369              		.loc 1 104 21 is_stmt 0 view .LVU78
+ 370 0042 0020     		movs	r0, #0
+ 371 0044 FFF7FEFF 		bl	ctrl_is_in_place
+ 372              	.LVL30:
+ 104:application/ctrl_task.c ****                     ctrl_board_run(OPEN);
+ 373              		.loc 1 104 20 discriminator 1 view .LVU79
+ 374 0048 58B1     		cbz	r0, .L38
+ 105:application/ctrl_task.c ****                     garbage_can.run_state++;
+ 375              		.loc 1 105 21 is_stmt 1 view .LVU80
+ 376 004a 0120     		movs	r0, #1
+ 377 004c FFF7FEFF 		bl	ctrl_board_run
+ 378              	.LVL31:
+ 106:application/ctrl_task.c ****                     Emm_V5_Read_Sys_Params((uint8_t)CAN_BOARD_ID, S_FLAG);
+ 379              		.loc 1 106 21 view .LVU81
+ 106:application/ctrl_task.c ****                     Emm_V5_Read_Sys_Params((uint8_t)CAN_BOARD_ID, S_FLAG);
+ 380              		.loc 1 106 32 is_stmt 0 view .LVU82
+ 381 0050 374A     		ldr	r2, .L50+4
+ 382 0052 1378     		ldrb	r3, [r2]	@ zero_extendqisi2
+ 106:application/ctrl_task.c ****                     Emm_V5_Read_Sys_Params((uint8_t)CAN_BOARD_ID, S_FLAG);
+ 383              		.loc 1 106 42 view .LVU83
+ 384 0054 0133     		adds	r3, r3, #1
+ 385 0056 1370     		strb	r3, [r2]
+ 107:application/ctrl_task.c ****                 } else
+ 386              		.loc 1 107 21 is_stmt 1 view .LVU84
+ 387 0058 0D21     		movs	r1, #13
+ 388 005a 0220     		movs	r0, #2
+ 389 005c FFF7FEFF 		bl	Emm_V5_Read_Sys_Params
+ 390              	.LVL32:
+ 391 0060 15E0     		b	.L30
+ 392              	.L38:
+ 109:application/ctrl_task.c ****                 break;
+ 393              		.loc 1 109 21 view .LVU85
+ 394 0062 0D21     		movs	r1, #13
+ 395 0064 0120     		movs	r0, #1
+ 396 0066 FFF7FEFF 		bl	Emm_V5_Read_Sys_Params
+ 397              	.LVL33:
+ 398 006a 10E0     		b	.L30
+ 399              	.L35:
+ 112:application/ctrl_task.c ****                     if (garbage_can.garbage.type == RECYCLABLE) {
+ 400              		.loc 1 112 17 view .LVU86
+ 112:application/ctrl_task.c ****                     if (garbage_can.garbage.type == RECYCLABLE) {
+ 401              		.loc 1 112 21 is_stmt 0 view .LVU87
+ 402 006c 0120     		movs	r0, #1
+ 403 006e FFF7FEFF 		bl	ctrl_is_in_place
+ 404              	.LVL34:
+ 112:application/ctrl_task.c ****                     if (garbage_can.garbage.type == RECYCLABLE) {
+ 405              		.loc 1 112 20 discriminator 1 view .LVU88
+ 406 0072 40B1     		cbz	r0, .L39
+ 113:application/ctrl_task.c ****                         garbage_can.run_state = ASHBIN_TO_COMPRESS;
+ 407              		.loc 1 113 21 is_stmt 1 view .LVU89
+ 113:application/ctrl_task.c ****                         garbage_can.run_state = ASHBIN_TO_COMPRESS;
+ARM GAS  /tmp/ccJFQZL2.s 			page 13
+
+
+ 408              		.loc 1 113 44 is_stmt 0 view .LVU90
+ 409 0074 2E4B     		ldr	r3, .L50+4
+ 410 0076 9B78     		ldrb	r3, [r3, #2]	@ zero_extendqisi2
+ 113:application/ctrl_task.c ****                         garbage_can.run_state = ASHBIN_TO_COMPRESS;
+ 411              		.loc 1 113 24 view .LVU91
+ 412 0078 83B3     		cbz	r3, .L49
+ 117:application/ctrl_task.c ****                     ctrl_board_run(CLOSE);
+ 413              		.loc 1 117 25 is_stmt 1 view .LVU92
+ 117:application/ctrl_task.c ****                     ctrl_board_run(CLOSE);
+ 414              		.loc 1 117 47 is_stmt 0 view .LVU93
+ 415 007a 2D4B     		ldr	r3, .L50+4
+ 416 007c 0522     		movs	r2, #5
+ 417 007e 1A70     		strb	r2, [r3]
+ 418              	.L41:
+ 118:application/ctrl_task.c ****                 }
+ 419              		.loc 1 118 21 is_stmt 1 view .LVU94
+ 420 0080 0020     		movs	r0, #0
+ 421 0082 FFF7FEFF 		bl	ctrl_board_run
+ 422              	.LVL35:
+ 423              	.L39:
+ 120:application/ctrl_task.c ****                 break;
+ 424              		.loc 1 120 17 view .LVU95
+ 425 0086 0D21     		movs	r1, #13
+ 426 0088 0220     		movs	r0, #2
+ 427 008a FFF7FEFF 		bl	Emm_V5_Read_Sys_Params
+ 428              	.LVL36:
+ 121:application/ctrl_task.c ****             case ASHBIN_TO_COMPRESS:
+ 429              		.loc 1 121 17 view .LVU96
+ 430              	.L30:
+ 143:application/ctrl_task.c ****         {
+ 431              		.loc 1 143 9 view .LVU97
+ 143:application/ctrl_task.c ****         {
+ 432              		.loc 1 143 13 is_stmt 0 view .LVU98
+ 433 008e FFF7FEFF 		bl	xTaskGetTickCount
+ 434              	.LVL37:
+ 143:application/ctrl_task.c ****         {
+ 435              		.loc 1 143 33 discriminator 1 view .LVU99
+ 436 0092 284B     		ldr	r3, .L50+8
+ 437 0094 A3FB0023 		umull	r2, r3, r3, r0
+ 438 0098 1B09     		lsrs	r3, r3, #4
+ 439 009a 3222     		movs	r2, #50
+ 440 009c 02FB1303 		mls	r3, r2, r3, r0
+ 143:application/ctrl_task.c ****         {
+ 441              		.loc 1 143 12 discriminator 1 view .LVU100
+ 442 00a0 33B9     		cbnz	r3, .L44
+ 145:application/ctrl_task.c ****                 usart_SendState(READY);
+ 443              		.loc 1 145 13 is_stmt 1 view .LVU101
+ 145:application/ctrl_task.c ****                 usart_SendState(READY);
+ 444              		.loc 1 145 28 is_stmt 0 view .LVU102
+ 445 00a2 234B     		ldr	r3, .L50+4
+ 446 00a4 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 145:application/ctrl_task.c ****                 usart_SendState(READY);
+ 447              		.loc 1 145 16 view .LVU103
+ 448 00a6 002B     		cmp	r3, #0
+ 449 00a8 3CD1     		bne	.L45
+ 146:application/ctrl_task.c ****             else
+ 450              		.loc 1 146 17 is_stmt 1 view .LVU104
+ARM GAS  /tmp/ccJFQZL2.s 			page 14
+
+
+ 451 00aa 0120     		movs	r0, #1
+ 452 00ac FFF7FEFF 		bl	usart_SendState
+ 453              	.LVL38:
+ 454              	.L44:
+ 151:application/ctrl_task.c ****     }
+ 455              		.loc 1 151 9 view .LVU105
+ 456 00b0 0120     		movs	r0, #1
+ 457 00b2 FFF7FEFF 		bl	osDelay
+ 458              	.LVL39:
+  92:application/ctrl_task.c **** 
+ 459              		.loc 1 92 11 view .LVU106
+ 460              	.L46:
+  92:application/ctrl_task.c **** 
+ 461              		.loc 1 92 5 view .LVU107
+  94:application/ctrl_task.c ****             case ALL_READY:
+ 462              		.loc 1 94 9 view .LVU108
+  94:application/ctrl_task.c ****             case ALL_READY:
+ 463              		.loc 1 94 28 is_stmt 0 view .LVU109
+ 464 00b6 1E4B     		ldr	r3, .L50+4
+ 465 00b8 1C78     		ldrb	r4, [r3]	@ zero_extendqisi2
+  94:application/ctrl_task.c ****             case ALL_READY:
+ 466              		.loc 1 94 9 view .LVU110
+ 467 00ba 052C     		cmp	r4, #5
+ 468 00bc E7D8     		bhi	.L30
+ 469 00be 01A3     		adr	r3, .L32
+ 470 00c0 53F824F0 		ldr	pc, [r3, r4, lsl #2]
+ 471              		.p2align 2
+ 472              	.L32:
+ 473 00c4 17000000 		.word	.L37+1
+ 474 00c8 43000000 		.word	.L36+1
+ 475 00cc 6D000000 		.word	.L35+1
+ 476 00d0 E9000000 		.word	.L34+1
+ 477 00d4 03010000 		.word	.L33+1
+ 478 00d8 0B010000 		.word	.L31+1
+ 479              		.p2align 1
+ 480              	.L49:
+ 114:application/ctrl_task.c ****                         ctrl_ashbin_run(ASHBIN_COMPRESS_POS);
+ 481              		.loc 1 114 25 is_stmt 1 view .LVU111
+ 114:application/ctrl_task.c ****                         ctrl_ashbin_run(ASHBIN_COMPRESS_POS);
+ 482              		.loc 1 114 47 is_stmt 0 view .LVU112
+ 483 00dc 0320     		movs	r0, #3
+ 484 00de 144B     		ldr	r3, .L50+4
+ 485 00e0 1870     		strb	r0, [r3]
+ 115:application/ctrl_task.c ****                     } else
+ 486              		.loc 1 115 25 is_stmt 1 view .LVU113
+ 487 00e2 FFF7FEFF 		bl	ctrl_ashbin_run
+ 488              	.LVL40:
+ 489 00e6 CBE7     		b	.L41
+ 490              	.L34:
+ 123:application/ctrl_task.c ****                     ctrl_compress(); // TODO
+ 491              		.loc 1 123 17 view .LVU114
+ 123:application/ctrl_task.c ****                     ctrl_compress(); // TODO
+ 492              		.loc 1 123 21 is_stmt 0 view .LVU115
+ 493 00e8 0020     		movs	r0, #0
+ 494 00ea FFF7FEFF 		bl	ctrl_is_in_place
+ 495              	.LVL41:
+ 123:application/ctrl_task.c ****                     ctrl_compress(); // TODO
+ARM GAS  /tmp/ccJFQZL2.s 			page 15
+
+
+ 496              		.loc 1 123 20 discriminator 1 view .LVU116
+ 497 00ee 18B1     		cbz	r0, .L42
+ 124:application/ctrl_task.c ****                     garbage_can.run_state++;
+ 498              		.loc 1 124 21 is_stmt 1 view .LVU117
+ 125:application/ctrl_task.c ****                 } else
+ 499              		.loc 1 125 21 view .LVU118
+ 125:application/ctrl_task.c ****                 } else
+ 500              		.loc 1 125 42 is_stmt 0 view .LVU119
+ 501 00f0 0134     		adds	r4, r4, #1
+ 502 00f2 0F4B     		ldr	r3, .L50+4
+ 503 00f4 1C70     		strb	r4, [r3]
+ 504 00f6 CAE7     		b	.L30
+ 505              	.L42:
+ 127:application/ctrl_task.c ****                 break;
+ 506              		.loc 1 127 21 is_stmt 1 view .LVU120
+ 507 00f8 0D21     		movs	r1, #13
+ 508 00fa 0120     		movs	r0, #1
+ 509 00fc FFF7FEFF 		bl	Emm_V5_Read_Sys_Params
+ 510              	.LVL42:
+ 511 0100 C5E7     		b	.L30
+ 512              	.L33:
+ 131:application/ctrl_task.c ****                 break;
+ 513              		.loc 1 131 17 view .LVU121
+ 131:application/ctrl_task.c ****                 break;
+ 514              		.loc 1 131 38 is_stmt 0 view .LVU122
+ 515 0102 0134     		adds	r4, r4, #1
+ 516 0104 0A4B     		ldr	r3, .L50+4
+ 517 0106 1C70     		strb	r4, [r3]
+ 132:application/ctrl_task.c ****             case BOARD_CLOSE:
+ 518              		.loc 1 132 17 is_stmt 1 view .LVU123
+ 519 0108 C1E7     		b	.L30
+ 520              	.L31:
+ 134:application/ctrl_task.c ****                     garbage_can.run_state = ALL_READY;
+ 521              		.loc 1 134 17 view .LVU124
+ 134:application/ctrl_task.c ****                     garbage_can.run_state = ALL_READY;
+ 522              		.loc 1 134 21 is_stmt 0 view .LVU125
+ 523 010a 0120     		movs	r0, #1
+ 524 010c FFF7FEFF 		bl	ctrl_is_in_place
+ 525              	.LVL43:
+ 134:application/ctrl_task.c ****                     garbage_can.run_state = ALL_READY;
+ 526              		.loc 1 134 20 discriminator 1 view .LVU126
+ 527 0110 18B1     		cbz	r0, .L43
+ 135:application/ctrl_task.c ****                 else
+ 528              		.loc 1 135 21 is_stmt 1 view .LVU127
+ 135:application/ctrl_task.c ****                 else
+ 529              		.loc 1 135 43 is_stmt 0 view .LVU128
+ 530 0112 074B     		ldr	r3, .L50+4
+ 531 0114 0022     		movs	r2, #0
+ 532 0116 1A70     		strb	r2, [r3]
+ 533 0118 B9E7     		b	.L30
+ 534              	.L43:
+ 137:application/ctrl_task.c ****                 break;
+ 535              		.loc 1 137 21 is_stmt 1 view .LVU129
+ 536 011a 0D21     		movs	r1, #13
+ 537 011c 0220     		movs	r0, #2
+ 538 011e FFF7FEFF 		bl	Emm_V5_Read_Sys_Params
+ 539              	.LVL44:
+ARM GAS  /tmp/ccJFQZL2.s 			page 16
+
+
+ 540 0122 B4E7     		b	.L30
+ 541              	.L45:
+ 148:application/ctrl_task.c ****         }
+ 542              		.loc 1 148 17 view .LVU130
+ 543 0124 0020     		movs	r0, #0
+ 544 0126 FFF7FEFF 		bl	usart_SendState
+ 545              	.LVL45:
+ 546 012a C1E7     		b	.L44
+ 547              	.L51:
+ 548              		.align	2
+ 549              	.L50:
+ 550 012c 00000000 		.word	pi_measure
+ 551 0130 00000000 		.word	garbage_can
+ 552 0134 1F85EB51 		.word	1374389535
+ 553              		.cfi_endproc
+ 554              	.LFE70:
+ 556              		.section	.bss.garbage_can,"aw",%nobits
+ 557              		.align	2
+ 560              	garbage_can:
+ 561 0000 00000000 		.space	10
+ 561      00000000 
+ 561      0000
+ 562              		.text
+ 563              	.Letext0:
+ 564              		.file 2 "/usr/arm-none-eabi/include/machine/_default_types.h"
+ 565              		.file 3 "/usr/arm-none-eabi/include/sys/_stdint.h"
+ 566              		.file 4 "Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM3/portmacro.h"
+ 567              		.file 5 "Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/cmsis_os.h"
+ 568              		.file 6 "application/CAN_Receive.h"
+ 569              		.file 7 "application/Emm_V5.h"
+ 570              		.file 8 "application/USART_receive.h"
+ 571              		.file 9 "Middlewares/Third_Party/FreeRTOS/Source/include/task.h"
+ARM GAS  /tmp/ccJFQZL2.s 			page 17
+
+
+DEFINED SYMBOLS
+                            *ABS*:00000000 ctrl_task.c
+     /tmp/ccJFQZL2.s:19     .text.ctrl_is_in_place:00000000 $t
+     /tmp/ccJFQZL2.s:24     .text.ctrl_is_in_place:00000000 ctrl_is_in_place
+     /tmp/ccJFQZL2.s:81     .text.ctrl_is_in_place:00000034 $d
+     /tmp/ccJFQZL2.s:86     .text.ctrl_ashbin_run:00000000 $t
+     /tmp/ccJFQZL2.s:91     .text.ctrl_ashbin_run:00000000 ctrl_ashbin_run
+     /tmp/ccJFQZL2.s:200    .text.ctrl_ashbin_run:00000068 $d
+     /tmp/ccJFQZL2.s:560    .bss.garbage_can:00000000 garbage_can
+     /tmp/ccJFQZL2.s:207    .text.ctrl_board_run:00000000 $t
+     /tmp/ccJFQZL2.s:212    .text.ctrl_board_run:00000000 ctrl_board_run
+     /tmp/ccJFQZL2.s:294    .text.ctrl_board_run:00000054 $d
+     /tmp/ccJFQZL2.s:300    .text.ctrl_task:00000000 $t
+     /tmp/ccJFQZL2.s:306    .text.ctrl_task:00000000 ctrl_task
+     /tmp/ccJFQZL2.s:473    .text.ctrl_task:000000c4 $d
+     /tmp/ccJFQZL2.s:479    .text.ctrl_task:000000dc $t
+     /tmp/ccJFQZL2.s:550    .text.ctrl_task:0000012c $d
+     /tmp/ccJFQZL2.s:557    .bss.garbage_can:00000000 $d
+
+UNDEFINED SYMBOLS
+motor_measure
+Emm_V5_Pos_Control
+osDelay
+usart_ReceiveStart
+Emm_V5_Read_Sys_Params
+xTaskGetTickCount
+usart_SendState
+pi_measure

@@ -1,0 +1,426 @@
+ARM GAS  /tmp/ccLm0VND.s 			page 1
+
+
+   1              		.cpu cortex-m3
+   2              		.arch armv7-m
+   3              		.fpu softvfp
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 1
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.file	"bsp_delay.c"
+  14              		.text
+  15              	.Ltext0:
+  16              		.cfi_sections	.debug_frame
+  17              		.file 1 "bsp/bsp_delay.c"
+  18              		.section	.text.delay_init,"ax",%progbits
+  19              		.align	1
+  20              		.global	delay_init
+  21              		.syntax unified
+  22              		.thumb
+  23              		.thumb_func
+  25              	delay_init:
+  26              	.LFB65:
+   1:bsp/bsp_delay.c **** #include "bsp_delay.h"
+   2:bsp/bsp_delay.c **** #include "main.h"
+   3:bsp/bsp_delay.c **** 
+   4:bsp/bsp_delay.c **** static uint8_t fac_us = 0;
+   5:bsp/bsp_delay.c **** static uint32_t fac_ms = 0;
+   6:bsp/bsp_delay.c **** 
+   7:bsp/bsp_delay.c **** void delay_init(void)
+   8:bsp/bsp_delay.c **** {
+  27              		.loc 1 8 1 view -0
+  28              		.cfi_startproc
+  29              		@ args = 0, pretend = 0, frame = 0
+  30              		@ frame_needed = 0, uses_anonymous_args = 0
+  31              		@ link register save eliminated.
+   9:bsp/bsp_delay.c ****     fac_us = SystemCoreClock / 1000000;
+  32              		.loc 1 9 5 view .LVU1
+  33              		.loc 1 9 30 is_stmt 0 view .LVU2
+  34 0000 074B     		ldr	r3, .L2
+  35 0002 1B68     		ldr	r3, [r3]
+  36 0004 074A     		ldr	r2, .L2+4
+  37 0006 A2FB0312 		umull	r1, r2, r2, r3
+  38 000a 920C     		lsrs	r2, r2, #18
+  39              		.loc 1 9 12 view .LVU3
+  40 000c 0649     		ldr	r1, .L2+8
+  41 000e 0A70     		strb	r2, [r1]
+  10:bsp/bsp_delay.c ****     fac_ms = SystemCoreClock / 1000;
+  42              		.loc 1 10 5 is_stmt 1 view .LVU4
+  43              		.loc 1 10 30 is_stmt 0 view .LVU5
+  44 0010 064A     		ldr	r2, .L2+12
+  45 0012 A2FB0323 		umull	r2, r3, r2, r3
+  46 0016 9B09     		lsrs	r3, r3, #6
+  47              		.loc 1 10 12 view .LVU6
+  48 0018 054A     		ldr	r2, .L2+16
+ARM GAS  /tmp/ccLm0VND.s 			page 2
+
+
+  49 001a 1360     		str	r3, [r2]
+  11:bsp/bsp_delay.c **** 
+  12:bsp/bsp_delay.c **** }
+  50              		.loc 1 12 1 view .LVU7
+  51 001c 7047     		bx	lr
+  52              	.L3:
+  53 001e 00BF     		.align	2
+  54              	.L2:
+  55 0020 00000000 		.word	SystemCoreClock
+  56 0024 83DE1B43 		.word	1125899907
+  57 0028 00000000 		.word	fac_us
+  58 002c D34D6210 		.word	274877907
+  59 0030 00000000 		.word	fac_ms
+  60              		.cfi_endproc
+  61              	.LFE65:
+  63              		.section	.text.delay_us,"ax",%progbits
+  64              		.align	1
+  65              		.global	delay_us
+  66              		.syntax unified
+  67              		.thumb
+  68              		.thumb_func
+  70              	delay_us:
+  71              	.LVL0:
+  72              	.LFB66:
+  13:bsp/bsp_delay.c **** 
+  14:bsp/bsp_delay.c **** void delay_us(uint16_t nus)
+  15:bsp/bsp_delay.c **** {
+  73              		.loc 1 15 1 is_stmt 1 view -0
+  74              		.cfi_startproc
+  75              		@ args = 0, pretend = 0, frame = 0
+  76              		@ frame_needed = 0, uses_anonymous_args = 0
+  77              		@ link register save eliminated.
+  78              		.loc 1 15 1 is_stmt 0 view .LVU9
+  79 0000 10B4     		push	{r4}
+  80              	.LCFI0:
+  81              		.cfi_def_cfa_offset 4
+  82              		.cfi_offset 4, -4
+  16:bsp/bsp_delay.c ****     uint32_t ticks = 0;
+  83              		.loc 1 16 5 is_stmt 1 view .LVU10
+  84              	.LVL1:
+  17:bsp/bsp_delay.c ****     uint32_t told = 0;
+  85              		.loc 1 17 5 view .LVU11
+  18:bsp/bsp_delay.c ****     uint32_t tnow = 0;
+  86              		.loc 1 18 5 view .LVU12
+  19:bsp/bsp_delay.c ****     uint32_t tcnt = 0;
+  87              		.loc 1 19 5 view .LVU13
+  20:bsp/bsp_delay.c ****     uint32_t reload = 0;
+  88              		.loc 1 20 5 view .LVU14
+  21:bsp/bsp_delay.c ****     reload = SysTick->LOAD;
+  89              		.loc 1 21 5 view .LVU15
+  90              		.loc 1 21 12 is_stmt 0 view .LVU16
+  91 0002 4FF0E023 		mov	r3, #-536813568
+  92 0006 5C69     		ldr	r4, [r3, #20]
+  93              	.LVL2:
+  22:bsp/bsp_delay.c ****     ticks = nus * fac_us;
+  94              		.loc 1 22 5 is_stmt 1 view .LVU17
+  95              		.loc 1 22 17 is_stmt 0 view .LVU18
+ARM GAS  /tmp/ccLm0VND.s 			page 3
+
+
+  96 0008 0C4A     		ldr	r2, .L11
+  97 000a 92F800C0 		ldrb	ip, [r2]	@ zero_extendqisi2
+  98 000e 00FB0CFC 		mul	ip, r0, ip
+  99              	.LVL3:
+  23:bsp/bsp_delay.c ****     told = SysTick->VAL;
+ 100              		.loc 1 23 5 is_stmt 1 view .LVU19
+ 101              		.loc 1 23 10 is_stmt 0 view .LVU20
+ 102 0012 9B69     		ldr	r3, [r3, #24]
+ 103              	.LVL4:
+  19:bsp/bsp_delay.c ****     uint32_t reload = 0;
+ 104              		.loc 1 19 14 view .LVU21
+ 105 0014 0021     		movs	r1, #0
+ 106 0016 04E0     		b	.L8
+ 107              	.LVL5:
+ 108              	.L6:
+  24:bsp/bsp_delay.c ****     while (1)
+  25:bsp/bsp_delay.c ****     {
+  26:bsp/bsp_delay.c ****         tnow = SysTick->VAL;
+  27:bsp/bsp_delay.c ****         if (tnow != told)
+  28:bsp/bsp_delay.c ****         {
+  29:bsp/bsp_delay.c ****             if (tnow < told)
+  30:bsp/bsp_delay.c ****             {
+  31:bsp/bsp_delay.c ****                 tcnt += told - tnow;
+  32:bsp/bsp_delay.c ****             }
+  33:bsp/bsp_delay.c ****             else
+  34:bsp/bsp_delay.c ****             {
+  35:bsp/bsp_delay.c ****                 tcnt += reload - tnow + told;
+ 109              		.loc 1 35 17 is_stmt 1 view .LVU22
+ 110              		.loc 1 35 32 is_stmt 0 view .LVU23
+ 111 0018 E01A     		subs	r0, r4, r3
+ 112              		.loc 1 35 39 view .LVU24
+ 113 001a 0244     		add	r2, r2, r0
+ 114              	.LVL6:
+ 115              		.loc 1 35 22 view .LVU25
+ 116 001c 1144     		add	r1, r1, r2
+ 117              	.LVL7:
+ 118              	.L7:
+  36:bsp/bsp_delay.c ****             }
+  37:bsp/bsp_delay.c ****             told = tnow;
+ 119              		.loc 1 37 13 is_stmt 1 view .LVU26
+  38:bsp/bsp_delay.c ****             if (tcnt >= ticks)
+ 120              		.loc 1 38 13 view .LVU27
+ 121              		.loc 1 38 16 is_stmt 0 view .LVU28
+ 122 001e 6145     		cmp	r1, ip
+ 123 0020 09D2     		bcs	.L10
+ 124              	.LVL8:
+ 125              	.L8:
+  19:bsp/bsp_delay.c ****     uint32_t reload = 0;
+ 126              		.loc 1 19 14 view .LVU29
+ 127 0022 1A46     		mov	r2, r3
+ 128              	.LVL9:
+ 129              	.L5:
+  24:bsp/bsp_delay.c ****     {
+ 130              		.loc 1 24 5 is_stmt 1 view .LVU30
+  26:bsp/bsp_delay.c ****         if (tnow != told)
+ 131              		.loc 1 26 9 view .LVU31
+  26:bsp/bsp_delay.c ****         if (tnow != told)
+ARM GAS  /tmp/ccLm0VND.s 			page 4
+
+
+ 132              		.loc 1 26 14 is_stmt 0 view .LVU32
+ 133 0024 4FF0E023 		mov	r3, #-536813568
+ 134 0028 9B69     		ldr	r3, [r3, #24]
+ 135              	.LVL10:
+  27:bsp/bsp_delay.c ****         {
+ 136              		.loc 1 27 9 is_stmt 1 view .LVU33
+  27:bsp/bsp_delay.c ****         {
+ 137              		.loc 1 27 12 is_stmt 0 view .LVU34
+ 138 002a 9A42     		cmp	r2, r3
+ 139 002c FAD0     		beq	.L5
+  29:bsp/bsp_delay.c ****             {
+ 140              		.loc 1 29 13 is_stmt 1 view .LVU35
+  29:bsp/bsp_delay.c ****             {
+ 141              		.loc 1 29 16 is_stmt 0 view .LVU36
+ 142 002e F3D9     		bls	.L6
+  31:bsp/bsp_delay.c ****             }
+ 143              		.loc 1 31 17 is_stmt 1 view .LVU37
+  31:bsp/bsp_delay.c ****             }
+ 144              		.loc 1 31 30 is_stmt 0 view .LVU38
+ 145 0030 D21A     		subs	r2, r2, r3
+ 146              	.LVL11:
+  31:bsp/bsp_delay.c ****             }
+ 147              		.loc 1 31 22 view .LVU39
+ 148 0032 1144     		add	r1, r1, r2
+ 149              	.LVL12:
+  31:bsp/bsp_delay.c ****             }
+ 150              		.loc 1 31 22 view .LVU40
+ 151 0034 F3E7     		b	.L7
+ 152              	.LVL13:
+ 153              	.L10:
+  39:bsp/bsp_delay.c ****             {
+  40:bsp/bsp_delay.c ****                 break;
+  41:bsp/bsp_delay.c ****             }
+  42:bsp/bsp_delay.c ****         }
+  43:bsp/bsp_delay.c ****     }
+  44:bsp/bsp_delay.c **** }
+ 154              		.loc 1 44 1 view .LVU41
+ 155 0036 10BC     		pop	{r4}
+ 156              	.LCFI1:
+ 157              		.cfi_restore 4
+ 158              		.cfi_def_cfa_offset 0
+ 159              	.LVL14:
+ 160              		.loc 1 44 1 view .LVU42
+ 161 0038 7047     		bx	lr
+ 162              	.L12:
+ 163 003a 00BF     		.align	2
+ 164              	.L11:
+ 165 003c 00000000 		.word	fac_us
+ 166              		.cfi_endproc
+ 167              	.LFE66:
+ 169              		.section	.text.delay_ms,"ax",%progbits
+ 170              		.align	1
+ 171              		.global	delay_ms
+ 172              		.syntax unified
+ 173              		.thumb
+ 174              		.thumb_func
+ 176              	delay_ms:
+ARM GAS  /tmp/ccLm0VND.s 			page 5
+
+
+ 177              	.LVL15:
+ 178              	.LFB67:
+  45:bsp/bsp_delay.c **** 
+  46:bsp/bsp_delay.c **** void delay_ms(uint16_t nms)
+  47:bsp/bsp_delay.c **** {
+ 179              		.loc 1 47 1 is_stmt 1 view -0
+ 180              		.cfi_startproc
+ 181              		@ args = 0, pretend = 0, frame = 0
+ 182              		@ frame_needed = 0, uses_anonymous_args = 0
+ 183              		@ link register save eliminated.
+ 184              		.loc 1 47 1 is_stmt 0 view .LVU44
+ 185 0000 10B4     		push	{r4}
+ 186              	.LCFI2:
+ 187              		.cfi_def_cfa_offset 4
+ 188              		.cfi_offset 4, -4
+  48:bsp/bsp_delay.c ****     uint32_t ticks = 0;
+ 189              		.loc 1 48 5 is_stmt 1 view .LVU45
+ 190              	.LVL16:
+  49:bsp/bsp_delay.c ****     uint32_t told = 0;
+ 191              		.loc 1 49 5 view .LVU46
+  50:bsp/bsp_delay.c ****     uint32_t tnow = 0;
+ 192              		.loc 1 50 5 view .LVU47
+  51:bsp/bsp_delay.c ****     uint32_t tcnt = 0;
+ 193              		.loc 1 51 5 view .LVU48
+  52:bsp/bsp_delay.c ****     uint32_t reload = 0;
+ 194              		.loc 1 52 5 view .LVU49
+  53:bsp/bsp_delay.c ****     reload = SysTick->LOAD;
+ 195              		.loc 1 53 5 view .LVU50
+ 196              		.loc 1 53 12 is_stmt 0 view .LVU51
+ 197 0002 4FF0E023 		mov	r3, #-536813568
+ 198 0006 5C69     		ldr	r4, [r3, #20]
+ 199              	.LVL17:
+  54:bsp/bsp_delay.c ****     ticks = nms * fac_ms;
+ 200              		.loc 1 54 5 is_stmt 1 view .LVU52
+ 201              		.loc 1 54 17 is_stmt 0 view .LVU53
+ 202 0008 0B4A     		ldr	r2, .L20
+ 203 000a 1268     		ldr	r2, [r2]
+ 204              		.loc 1 54 11 view .LVU54
+ 205 000c 02FB00FC 		mul	ip, r2, r0
+ 206              	.LVL18:
+  55:bsp/bsp_delay.c ****     told = SysTick->VAL;
+ 207              		.loc 1 55 5 is_stmt 1 view .LVU55
+ 208              		.loc 1 55 10 is_stmt 0 view .LVU56
+ 209 0010 9B69     		ldr	r3, [r3, #24]
+ 210              	.LVL19:
+  51:bsp/bsp_delay.c ****     uint32_t reload = 0;
+ 211              		.loc 1 51 14 view .LVU57
+ 212 0012 0021     		movs	r1, #0
+ 213 0014 04E0     		b	.L17
+ 214              	.LVL20:
+ 215              	.L15:
+  56:bsp/bsp_delay.c ****     while (1)
+  57:bsp/bsp_delay.c ****     {
+  58:bsp/bsp_delay.c ****         tnow = SysTick->VAL;
+  59:bsp/bsp_delay.c ****         if (tnow != told)
+  60:bsp/bsp_delay.c ****         {
+  61:bsp/bsp_delay.c ****             if (tnow < told)
+ARM GAS  /tmp/ccLm0VND.s 			page 6
+
+
+  62:bsp/bsp_delay.c ****             {
+  63:bsp/bsp_delay.c ****                 tcnt += told - tnow;
+  64:bsp/bsp_delay.c ****             }
+  65:bsp/bsp_delay.c ****             else
+  66:bsp/bsp_delay.c ****             {
+  67:bsp/bsp_delay.c ****                 tcnt += reload - tnow + told;
+ 216              		.loc 1 67 17 is_stmt 1 view .LVU58
+ 217              		.loc 1 67 32 is_stmt 0 view .LVU59
+ 218 0016 E01A     		subs	r0, r4, r3
+ 219              		.loc 1 67 39 view .LVU60
+ 220 0018 0244     		add	r2, r2, r0
+ 221              	.LVL21:
+ 222              		.loc 1 67 22 view .LVU61
+ 223 001a 1144     		add	r1, r1, r2
+ 224              	.LVL22:
+ 225              	.L16:
+  68:bsp/bsp_delay.c ****             }
+  69:bsp/bsp_delay.c ****             told = tnow;
+ 226              		.loc 1 69 13 is_stmt 1 view .LVU62
+  70:bsp/bsp_delay.c ****             if (tcnt >= ticks)
+ 227              		.loc 1 70 13 view .LVU63
+ 228              		.loc 1 70 16 is_stmt 0 view .LVU64
+ 229 001c 6145     		cmp	r1, ip
+ 230 001e 09D2     		bcs	.L19
+ 231              	.LVL23:
+ 232              	.L17:
+  51:bsp/bsp_delay.c ****     uint32_t reload = 0;
+ 233              		.loc 1 51 14 view .LVU65
+ 234 0020 1A46     		mov	r2, r3
+ 235              	.LVL24:
+ 236              	.L14:
+  56:bsp/bsp_delay.c ****     {
+ 237              		.loc 1 56 5 is_stmt 1 view .LVU66
+  58:bsp/bsp_delay.c ****         if (tnow != told)
+ 238              		.loc 1 58 9 view .LVU67
+  58:bsp/bsp_delay.c ****         if (tnow != told)
+ 239              		.loc 1 58 14 is_stmt 0 view .LVU68
+ 240 0022 4FF0E023 		mov	r3, #-536813568
+ 241 0026 9B69     		ldr	r3, [r3, #24]
+ 242              	.LVL25:
+  59:bsp/bsp_delay.c ****         {
+ 243              		.loc 1 59 9 is_stmt 1 view .LVU69
+  59:bsp/bsp_delay.c ****         {
+ 244              		.loc 1 59 12 is_stmt 0 view .LVU70
+ 245 0028 9A42     		cmp	r2, r3
+ 246 002a FAD0     		beq	.L14
+  61:bsp/bsp_delay.c ****             {
+ 247              		.loc 1 61 13 is_stmt 1 view .LVU71
+  61:bsp/bsp_delay.c ****             {
+ 248              		.loc 1 61 16 is_stmt 0 view .LVU72
+ 249 002c F3D9     		bls	.L15
+  63:bsp/bsp_delay.c ****             }
+ 250              		.loc 1 63 17 is_stmt 1 view .LVU73
+  63:bsp/bsp_delay.c ****             }
+ 251              		.loc 1 63 30 is_stmt 0 view .LVU74
+ 252 002e D21A     		subs	r2, r2, r3
+ 253              	.LVL26:
+ARM GAS  /tmp/ccLm0VND.s 			page 7
+
+
+  63:bsp/bsp_delay.c ****             }
+ 254              		.loc 1 63 22 view .LVU75
+ 255 0030 1144     		add	r1, r1, r2
+ 256              	.LVL27:
+  63:bsp/bsp_delay.c ****             }
+ 257              		.loc 1 63 22 view .LVU76
+ 258 0032 F3E7     		b	.L16
+ 259              	.LVL28:
+ 260              	.L19:
+  71:bsp/bsp_delay.c ****             {
+  72:bsp/bsp_delay.c ****                 break;
+  73:bsp/bsp_delay.c ****             }
+  74:bsp/bsp_delay.c ****         }
+  75:bsp/bsp_delay.c ****     }
+  76:bsp/bsp_delay.c **** }
+ 261              		.loc 1 76 1 view .LVU77
+ 262 0034 10BC     		pop	{r4}
+ 263              	.LCFI3:
+ 264              		.cfi_restore 4
+ 265              		.cfi_def_cfa_offset 0
+ 266              	.LVL29:
+ 267              		.loc 1 76 1 view .LVU78
+ 268 0036 7047     		bx	lr
+ 269              	.L21:
+ 270              		.align	2
+ 271              	.L20:
+ 272 0038 00000000 		.word	fac_ms
+ 273              		.cfi_endproc
+ 274              	.LFE67:
+ 276              		.section	.bss.fac_ms,"aw",%nobits
+ 277              		.align	2
+ 280              	fac_ms:
+ 281 0000 00000000 		.space	4
+ 282              		.section	.bss.fac_us,"aw",%nobits
+ 285              	fac_us:
+ 286 0000 00       		.space	1
+ 287              		.text
+ 288              	.Letext0:
+ 289              		.file 2 "/usr/arm-none-eabi/include/machine/_default_types.h"
+ 290              		.file 3 "/usr/arm-none-eabi/include/sys/_stdint.h"
+ 291              		.file 4 "Drivers/CMSIS/Include/core_cm3.h"
+ 292              		.file 5 "Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h"
+ARM GAS  /tmp/ccLm0VND.s 			page 8
+
+
+DEFINED SYMBOLS
+                            *ABS*:00000000 bsp_delay.c
+     /tmp/ccLm0VND.s:19     .text.delay_init:00000000 $t
+     /tmp/ccLm0VND.s:25     .text.delay_init:00000000 delay_init
+     /tmp/ccLm0VND.s:55     .text.delay_init:00000020 $d
+     /tmp/ccLm0VND.s:285    .bss.fac_us:00000000 fac_us
+     /tmp/ccLm0VND.s:280    .bss.fac_ms:00000000 fac_ms
+     /tmp/ccLm0VND.s:64     .text.delay_us:00000000 $t
+     /tmp/ccLm0VND.s:70     .text.delay_us:00000000 delay_us
+     /tmp/ccLm0VND.s:165    .text.delay_us:0000003c $d
+     /tmp/ccLm0VND.s:170    .text.delay_ms:00000000 $t
+     /tmp/ccLm0VND.s:176    .text.delay_ms:00000000 delay_ms
+     /tmp/ccLm0VND.s:272    .text.delay_ms:00000038 $d
+     /tmp/ccLm0VND.s:277    .bss.fac_ms:00000000 $d
+     /tmp/ccLm0VND.s:286    .bss.fac_us:00000000 $d
+
+UNDEFINED SYMBOLS
+SystemCoreClock
